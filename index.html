@@ -6,7 +6,6 @@
     <title>Options Flow Analyzer</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-primary: #0a0e14;
@@ -1024,7 +1023,35 @@
         // Supabase configuration
         const SUPABASE_URL = 'https://bwqpikngknfmihgmaody.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3cXBpa25na25mbWloZ21hb2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyNTcwNjQsImV4cCI6MjA4MTgzMzA2NH0.Ht6AXF97kz-YcDtlYgd7OS0R_rfrrnxPut4HDB7K1HE';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabase = null;
+        
+        // Load Supabase library dynamically
+        function loadSupabase() {
+            return new Promise((resolve, reject) => {
+                if (window.supabase) {
+                    resolve(window.supabase);
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                script.onload = () => resolve(window.supabase);
+                script.onerror = () => reject(new Error('Failed to load Supabase'));
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Initialize Supabase when needed
+        async function initSupabase() {
+            if (supabase) return supabase;
+            try {
+                const sb = await loadSupabase();
+                supabase = sb.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                return supabase;
+            } catch (err) {
+                console.error('Supabase init error:', err);
+                return null;
+            }
+        }
         
         // Database status
         const dbStatus = document.getElementById('db-status');
@@ -1038,6 +1065,12 @@
         
         // Check database connection
         async function checkDbConnection() {
+            await initSupabase();
+            if (!supabase) {
+                dbStatus.textContent = '○ Not configured';
+                dbStatus.className = 'db-status disconnected';
+                return false;
+            }
             try {
                 const { data, error } = await supabase.from('flow_sessions').select('id').limit(1);
                 if (error) throw error;
@@ -1054,6 +1087,11 @@
         
         // Save flows to database
         async function saveFlowsToDatabase() {
+            await initSupabase();
+            if (!supabase) {
+                alert('Database not connected. Please check your internet connection and refresh.');
+                return;
+            }
             if (allFlows.length === 0) {
                 alert('No flow data to save. Please upload a CSV first.');
                 return;
@@ -1162,6 +1200,11 @@
         
         // Load 7-day trends
         async function loadTrends() {
+            await initSupabase();
+            if (!supabase) {
+                trendsDisplay.innerHTML = '<p style="color:var(--text-muted)">Database not connected. Trends require database connection.</p>';
+                return;
+            }
             loadTrendsBtn.disabled = true;
             loadTrendsBtn.innerHTML = '<span>Loading...</span>';
             
