@@ -812,16 +812,14 @@
                     <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
                 <div class="section-content" id="trends-content">
-                    <div class="date-picker-row">
-                        <label style="color:var(--text-secondary);font-size:0.85rem">Flow Date:</label>
+                    <div class="date-picker-row" style="flex-wrap:wrap">
+                        <label style="color:var(--text-secondary);font-size:0.85rem">Select Date:</label>
                         <input type="date" class="date-input" id="flow-date-input">
-                        <button class="export-btn visible" id="save-to-db-btn" style="padding:0.4rem 0.8rem;font-size:0.8rem">
+                        <button class="export-btn visible" id="load-historical-btn" style="padding:0.4rem 0.8rem;font-size:0.8rem">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
-                                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/>
-                                <polyline points="17 21 17 13 7 13 7 21" stroke-linecap="round" stroke-linejoin="round"/>
-                                <polyline points="7 3 7 8 15 8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
-                            Save to Database
+                            Load Historical Flow
                         </button>
                         <button class="export-btn visible" id="load-trends-btn" style="padding:0.4rem 0.8rem;font-size:0.8rem">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
@@ -830,9 +828,10 @@
                             </svg>
                             Load 7-Day Trends
                         </button>
+                        <span id="available-dates-info" style="font-size:0.75rem;color:var(--text-muted);width:100%;margin-top:0.5rem"></span>
                     </div>
                     <div id="trends-display">
-                        <p style="color:var(--text-muted)">Upload flow data and save to database to start tracking trends.</p>
+                        <p style="color:var(--text-muted)">Select a date to load historical flow, or click "Load 7-Day Trends" to view sentiment trends.</p>
                     </div>
                 </div>
             </div>
@@ -1023,88 +1022,69 @@
         // Supabase configuration
         const SUPABASE_URL = 'https://bwqpikngknfmihgmaody.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3cXBpa25na25mbWloZ21hb2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyNTcwNjQsImV4cCI6MjA4MTgzMzA2NH0.Ht6AXF97kz-YcDtlYgd7OS0R_rfrrnxPut4HDB7K1HE';
-        let supabaseClient = null;
+        let sbInstance = null;
         
         // Load Supabase library dynamically
         function loadSupabase() {
             return new Promise((resolve, reject) => {
-                // Check if already loaded
-                if (window.supabase && window.supabase.createClient) {
-                    console.log('Supabase already available');
+                if (window.supabase) {
                     resolve(window.supabase);
                     return;
                 }
-                console.log('Loading Supabase library...');
                 const script = document.createElement('script');
-                // Use the UMD bundle directly
-                script.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+                script.src = 'https://unpkg.com/@supabase/supabase-js@2';
+                script.async = true;
+                
                 script.onload = () => {
-                    console.log('Script loaded, checking window.supabase...');
-                    // Try multiple ways to access supabase
-                    const sb = window.supabase || window.Supabase || window.createClient;
-                    console.log('Found:', sb);
-                    if (sb && (sb.createClient || typeof sb === 'function')) {
-                        resolve(sb);
+                    if (window.supabase) {
+                        resolve(window.supabase);
                     } else {
-                        // Last resort - check what's on window
-                        console.log('Window keys:', Object.keys(window).filter(k => k.toLowerCase().includes('supa')));
-                        reject(new Error('Supabase not found on window'));
+                        reject(new Error('Supabase loaded but window.supabase is missing'));
                     }
                 };
-                script.onerror = (err) => {
-                    console.error('Script load failed:', err);
-                    reject(new Error('Failed to load Supabase'));
-                };
+                
+                script.onerror = () => reject(new Error('Failed to load Supabase script'));
                 document.head.appendChild(script);
             });
         }
         
         // Initialize Supabase when needed
         async function initSupabase() {
-            if (supabaseClient) return supabaseClient;
+            if (sbInstance) return sbInstance;
+            
             try {
-                console.log('Initializing Supabase...');
-                const sb = await loadSupabase();
-                console.log('Supabase module:', sb);
-                
-                // Handle different export formats
-                if (sb.createClient) {
-                    supabaseClient = sb.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                } else if (typeof sb === 'function') {
-                    supabaseClient = sb(SUPABASE_URL, SUPABASE_ANON_KEY);
-                } else {
-                    console.error('Unknown Supabase format:', sb);
-                    return null;
-                }
-                
-                console.log('Supabase client created:', supabaseClient);
-                return supabaseClient;
+                const sbLibrary = await loadSupabase();
+                sbInstance = sbLibrary.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Supabase Initialized');
+                return sbInstance;
             } catch (err) {
-                console.error('Supabase init error:', err);
+                console.error('Supabase Init Error:', err);
+                dbStatus.textContent = '○ Init Error';
                 return null;
             }
         }
         
         // Database status
         const dbStatus = document.getElementById('db-status');
-        const flowDateInput = document.getElementById('flow-date-input');
-        const saveToDbBtn = document.getElementById('save-to-db-btn');
         const loadTrendsBtn = document.getElementById('load-trends-btn');
         const trendsDisplay = document.getElementById('trends-display');
+        const flowDateInput = document.getElementById('flow-date-input');
+        const loadHistoricalBtn = document.getElementById('load-historical-btn');
+        const availableDatesInfo = document.getElementById('available-dates-info');
         
         // Set default date to today
         flowDateInput.valueAsDate = new Date();
         
         // Check database connection
         async function checkDbConnection() {
-            await initSupabase();
-            if (!supabase) {
+            const client = await initSupabase();
+            if (!client) {
                 dbStatus.textContent = '○ Not configured';
                 dbStatus.className = 'db-status disconnected';
                 return false;
             }
             try {
-                const { data, error } = await supabaseClient.from('flow_sessions').select('id').limit(1);
+                const { data, error } = await client.from('flow_sessions').select('id').limit(1);
                 if (error) throw error;
                 dbStatus.textContent = '● Connected';
                 dbStatus.className = 'db-status connected';
@@ -1117,128 +1097,120 @@
             }
         }
         
-        // Save flows to database
-        async function saveFlowsToDatabase() {
+        // Load available dates from database
+        async function loadAvailableDates() {
+            const client = await initSupabase();
+            if (!client) return;
+            
+            try {
+                const { data, error } = await client
+                    .from('flow_sessions')
+                    .select('flow_date')
+                    .order('flow_date', { ascending: false })
+                    .limit(30);
+                
+                if (error || !data || data.length === 0) {
+                    availableDatesInfo.textContent = 'No historical data available yet.';
+                    return;
+                }
+                
+                const uniqueDates = [...new Set(data.map(d => d.flow_date))].slice(0, 10);
+                availableDatesInfo.innerHTML = `<strong>Available dates:</strong> ${uniqueDates.join(', ')}`;
+            } catch (err) {
+                console.error('Error loading dates:', err);
+            }
+        }
+        
+        // Load historical flow data from database
+        async function loadHistoricalFlow() {
             const client = await initSupabase();
             if (!client) {
-                alert('Database not connected. Check browser console (F12) for details.');
-                return;
-            }
-            if (allFlows.length === 0) {
-                alert('No flow data to save. Please upload a CSV first.');
+                alert('Database not connected.');
                 return;
             }
             
             const flowDate = flowDateInput.value;
             if (!flowDate) {
-                alert('Please select a flow date.');
+                alert('Please select a date.');
                 return;
             }
             
-            saveToDbBtn.disabled = true;
-            saveToDbBtn.innerHTML = '<span>Saving...</span>';
+            loadHistoricalBtn.disabled = true;
+            loadHistoricalBtn.innerHTML = '<span>Loading...</span>';
             
             try {
-                // Create flow session
-                const { data: session, error: sessionError } = await supabaseClient
-                    .from('flow_sessions')
-                    .insert({
-                        file_name: currentFileName,
-                        flow_date: flowDate,
-                        uploaded_by: 'anonymous'
-                    })
-                    .select()
-                    .single();
+                const { data: flowData, error } = await client
+                    .from('options_flow')
+                    .select('*')
+                    .eq('flow_date', flowDate);
                 
-                if (sessionError) throw sessionError;
+                if (error) throw error;
                 
-                // Prepare flow records (batch insert)
-                const flowRecords = allFlows.map(f => ({
-                    session_id: session.id,
-                    flow_date: flowDate,
-                    symbol: f.Symbol,
-                    call_put: f.CallPut,
-                    strike: f.Strike,
-                    expiration_date: f.ExpirationDate,
-                    spot: f.Spot,
-                    premium: f.Premium,
-                    volume: f.Volume,
-                    side: f.Side,
-                    type: f.Type,
-                    color: f.Color,
-                    dte: f.Dte,
-                    created_time: f.CreatedTime,
-                    uoa: f.Uoa
-                }));
-                
-                // Insert in batches of 500
-                for (let i = 0; i < flowRecords.length; i += 500) {
-                    const batch = flowRecords.slice(i, i + 500);
-                    const { error: flowError } = await supabaseClient.from('options_flow').insert(batch);
-                    if (flowError) throw flowError;
+                if (!flowData || flowData.length === 0) {
+                    alert(`No flow data found for ${flowDate}. Check available dates below.`);
+                    loadHistoricalBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg> Load Historical Flow`;
+                    loadHistoricalBtn.disabled = false;
+                    return;
                 }
                 
-                // Calculate and save daily sentiment aggregates
-                const sentimentMap = {};
-                allFlows.forEach(f => {
-                    if (!sentimentMap[f.Symbol]) {
-                        sentimentMap[f.Symbol] = { bullish: 0, bearish: 0, total: 0, count: 0 };
-                    }
-                    const isBullish = (f.CallPut === 'CALL' && ['A','AA'].includes(f.Side)) || 
-                                     (f.CallPut === 'PUT' && ['B','BB'].includes(f.Side));
-                    const isBearish = (f.CallPut === 'PUT' && ['A','AA'].includes(f.Side)) || 
-                                     (f.CallPut === 'CALL' && ['B','BB'].includes(f.Side));
-                    
-                    if (isBullish) sentimentMap[f.Symbol].bullish += f.Premium;
-                    if (isBearish) sentimentMap[f.Symbol].bearish += f.Premium;
-                    sentimentMap[f.Symbol].total += f.Premium;
-                    sentimentMap[f.Symbol].count++;
-                });
-                
-                // Upsert sentiment records
-                const sentimentRecords = Object.entries(sentimentMap).map(([symbol, data]) => ({
-                    flow_date: flowDate,
-                    symbol: symbol,
-                    bullish_premium: data.bullish,
-                    bearish_premium: data.bearish,
-                    total_premium: data.total,
-                    trade_count: data.count,
-                    net_sentiment: data.bullish > data.bearish ? 'bullish' : data.bearish > data.bullish ? 'bearish' : 'neutral'
+                // Transform database records to match CSV format
+                allFlows = flowData.map(f => ({
+                    Symbol: f.symbol,
+                    CallPut: f.call_put,
+                    Strike: parseFloat(f.strike) || 0,
+                    ExpirationDate: f.expiration_date,
+                    Spot: parseFloat(f.spot) || 0,
+                    Premium: parseInt(f.premium) || 0,
+                    Volume: parseInt(f.volume) || 0,
+                    Side: f.side,
+                    Type: f.type,
+                    Color: f.color,
+                    Dte: parseInt(f.dte) || 0,
+                    CreatedTime: f.created_time,
+                    CreatedDate: f.flow_date,
+                    Uoa: f.uoa,
+                    Price: f.premium && f.volume ? (f.premium / f.volume / 100) : 0
                 }));
                 
-                for (const record of sentimentRecords) {
-                    const { error: sentError } = await supabaseClient
-                        .from('daily_sentiment')
-                        .upsert(record, { onConflict: 'flow_date,symbol' });
-                    if (sentError) console.error('Sentiment upsert error:', sentError);
-                }
+                // Update filename display
+                currentFileName = `Historical-${flowDate}`;
+                fileName.textContent = `${flowDate} (from database)`;
+                fileSize.textContent = `${allFlows.length} trades`;
+                fileInfo.classList.add('visible');
                 
-                saveToDbBtn.innerHTML = '<span>✓ Saved!</span>';
-                setTimeout(() => {
-                    saveToDbBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/><polyline points="17 21 17 13 7 13 7 21" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 3 7 8 15 8" stroke-linecap="round" stroke-linejoin="round"/></svg> Save to Database`;
-                    saveToDbBtn.disabled = false;
-                }, 2000);
+                // Populate filters and run analysis
+                populateFilters(allFlows);
+                analyze(allFlows);
                 
-                // Auto-load trends after saving
-                loadTrends();
+                // Show analysis sections
+                output.classList.add('visible');
+                filtersEl.classList.add('visible');
+                exportBtn.classList.add('visible');
+                fetchPricesBtn.classList.add('visible');
+                
+                loadHistoricalBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg> Load Historical Flow`;
+                loadHistoricalBtn.disabled = false;
                 
             } catch (err) {
-                console.error('Save error:', err);
-                alert('Error saving to database: ' + err.message);
-                saveToDbBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/><polyline points="17 21 17 13 7 13 7 21" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 3 7 8 15 8" stroke-linecap="round" stroke-linejoin="round"/></svg> Save to Database`;
-                saveToDbBtn.disabled = false;
+                console.error('Load historical error:', err);
+                alert('Error loading historical data: ' + err.message);
+                loadHistoricalBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg> Load Historical Flow`;
+                loadHistoricalBtn.disabled = false;
             }
         }
         
-        // Load 7-day trends
-        async function loadTrends() {
-            await initSupabase();
-            if (!supabase) {
+        // Load 7-day trends (with optional ticker filter)
+        async function loadTrends(tickerFilter = null) {
+            const client = await initSupabase();
+            if (!client) {
                 trendsDisplay.innerHTML = '<p style="color:var(--text-muted)">Database not connected. Trends require database connection.</p>';
                 return;
             }
             loadTrendsBtn.disabled = true;
             loadTrendsBtn.innerHTML = '<span>Loading...</span>';
+            
+            // Use ticker from filter dropdown if not passed
+            const selectedTicker = tickerFilter || filterTicker.value;
             
             try {
                 // Get last 7 days of sentiment data
@@ -1246,17 +1218,24 @@
                 const startDate = new Date();
                 startDate.setDate(startDate.getDate() - 7);
                 
-                const { data: sentimentData, error } = await supabaseClient
+                let query = client
                     .from('daily_sentiment')
                     .select('*')
                     .gte('flow_date', startDate.toISOString().split('T')[0])
-                    .lte('flow_date', endDate.toISOString().split('T')[0])
-                    .order('flow_date', { ascending: true });
+                    .lte('flow_date', endDate.toISOString().split('T')[0]);
+                
+                // Apply ticker filter if selected
+                if (selectedTicker) {
+                    query = query.eq('symbol', selectedTicker);
+                }
+                
+                const { data: sentimentData, error } = await query.order('flow_date', { ascending: true });
                 
                 if (error) throw error;
                 
                 if (!sentimentData || sentimentData.length === 0) {
-                    trendsDisplay.innerHTML = '<p style="color:var(--text-muted)">No historical data found. Save some flow data to start tracking trends.</p>';
+                    const filterMsg = selectedTicker ? ` for ${selectedTicker}` : '';
+                    trendsDisplay.innerHTML = `<p style="color:var(--text-muted)">No historical data found${filterMsg}. ${selectedTicker ? 'Try clearing the ticker filter or ' : ''}Save some flow data to start tracking trends.</p>`;
                     loadTrendsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 3v18h18" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 9l-5 5-4-4-3 3" stroke-linecap="round" stroke-linejoin="round"/></svg> Load 7-Day Trends`;
                     loadTrendsBtn.disabled = false;
                     return;
@@ -1285,7 +1264,10 @@
                     .slice(0, 20);
                 
                 // Render trends
-                let trendsHtml = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">Showing sentiment trends for top 20 tickers over last 7 days. Dates with data: ${allDates.map(d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric'})).join(', ')}</p>`;
+                const filterNote = selectedTicker 
+                    ? `<span style="background:var(--accent-info);color:white;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;margin-right:0.5rem">Filtered: ${selectedTicker}</span>` 
+                    : '';
+                let trendsHtml = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">${filterNote}Showing sentiment trends for ${selectedTicker ? selectedTicker : 'top 20 tickers'} over last 7 days. Dates with data: ${allDates.map(d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric'})).join(', ')}</p>`;
                 
                 sortedSymbols.forEach(([symbol, data]) => {
                     const days = allDates.map(date => {
@@ -1360,12 +1342,15 @@
         }
         
         // Event listeners for database buttons
-        saveToDbBtn.addEventListener('click', saveFlowsToDatabase);
-        loadTrendsBtn.addEventListener('click', loadTrends);
+        loadTrendsBtn.addEventListener('click', () => loadTrends());
+        loadHistoricalBtn.addEventListener('click', loadHistoricalFlow);
         
-        // Check connection and load trends on page load
+        // Check connection, load available dates, and load trends on page load
         checkDbConnection().then(connected => {
-            if (connected) loadTrends();
+            if (connected) {
+                loadAvailableDates();
+                loadTrends();
+            }
         });
 
         uploadZone.addEventListener('click', () => fileInput.click());
@@ -1557,7 +1542,11 @@
         }
 
         // Filter event listeners
-        filterTicker.addEventListener('change', applyFilters);
+        filterTicker.addEventListener('change', () => {
+            applyFilters();
+            // Also reload trends filtered by this ticker
+            loadTrends(filterTicker.value);
+        });
         filterSecurity.addEventListener('change', applyFilters);
         filterDte.addEventListener('change', applyFilters);
         filterType.addEventListener('change', applyFilters);
@@ -1581,6 +1570,8 @@
             filterRequireBlocks.checked = false;
             filterHighConviction.checked = false;
             applyFilters();
+            // Reload trends without ticker filter
+            loadTrends();
         }
 
         function applyFilters() {

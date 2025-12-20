@@ -36,9 +36,17 @@
 ## After Deployment
 
 Your site will be live at:
-- `https://your-project-name.vercel.app`
+- `https://your-project-name.vercel.app` - Public (read-only trends)
+- `https://your-project-name.vercel.app/admin` - Admin (save to database)
 
-Share this URL with your colleagues!
+**Share the main URL with colleagues. Keep /admin private for yourself.**
+
+## Two Versions
+
+| Page | URL | Features |
+|------|-----|----------|
+| **Public** | `/` | Upload CSV, view analysis, view trends (read-only) |
+| **Admin** | `/admin` | All public features + Save to Database |
 
 ## Database (Supabase)
 
@@ -46,14 +54,14 @@ Already configured and connected:
 - **Project URL**: https://bwqpikngknfmihgmaody.supabase.co
 - **Tables**: flow_sessions, options_flow, daily_sentiment
 
-All users will share the same database, so everyone sees the same historical trends.
+Only you (via /admin) can write to the database. Colleagues can only read trends.
 
 ## Features
 
 - Upload daily options flow CSV
-- Save to shared Supabase database
+- Full flow analysis (clustering, high conviction, etc.)
 - View 7-day sentiment trends
 - Track bullish/bearish streaks
 - Detect sentiment flips
 - Fetch live prices (Finnhub)
-- Full flow analysis (clustering, high conviction, etc.)
+- **Admin only**: Save flows to shared database
