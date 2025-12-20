@@ -720,6 +720,83 @@
             </button>
         </div>
 
+        <!-- Historical Data Section - Always Visible -->
+        <div class="section" id="historical-section" style="margin-bottom:1.5rem">
+            <div class="section-header" onclick="toggleSection('historical-section')">
+                <div class="section-icon" style="background: rgba(88, 166, 255, 0.15); color: var(--accent-info);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18M9 17V9m4 8V5m4 12v-4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="section-title">Historical Data</span>
+                <span class="db-status" id="db-status">Connecting...</span>
+                <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="section-content" id="historical-content">
+                <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">Don't have a CSV? Load historical flow data directly from the database.</p>
+                
+                <!-- Historical Filters -->
+                <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem;padding:0.75rem;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-color)">
+                    <div class="filter-group" style="min-width:120px">
+                        <label class="filter-label">Security</label>
+                        <select class="filter-select" id="hist-filter-security">
+                            <option value="">All</option>
+                            <option value="STOCK">Stocks</option>
+                            <option value="ETF">ETFs</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="min-width:140px">
+                        <label class="filter-label">Ticker</label>
+                        <select class="filter-select" id="hist-filter-ticker">
+                            <option value="">All Tickers</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="min-width:120px">
+                        <label class="filter-label">Expiration</label>
+                        <select class="filter-select" id="hist-filter-dte">
+                            <option value="">All DTE</option>
+                            <option value="7">≤ 7 days (Weekly)</option>
+                            <option value="30">≤ 30 days</option>
+                            <option value="60">31-60 days</option>
+                            <option value="90">61-90 days</option>
+                            <option value="90+">90+ days (LEAPS)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="min-width:120px">
+                        <label class="filter-label">Direction</label>
+                        <select class="filter-select" id="hist-filter-direction">
+                            <option value="">All</option>
+                            <option value="CALL">Calls Only</option>
+                            <option value="PUT">Puts Only</option>
+                        </select>
+                    </div>
+                    <button id="hist-filter-reset" class="filter-reset" style="align-self:flex-end;padding:0.4rem 0.75rem;font-size:0.8rem">Reset</button>
+                </div>
+                
+                <div class="date-picker-row" style="flex-wrap:wrap">
+                    <label style="color:var(--text-secondary);font-size:0.85rem">Select Date:</label>
+                    <input type="date" class="date-input" id="flow-date-input">
+                    <button class="export-btn visible" id="load-historical-btn" style="padding:0.4rem 0.8rem;font-size:0.8rem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Load Historical Flow
+                    </button>
+                    <button class="export-btn visible" id="load-trends-btn" style="padding:0.4rem 0.8rem;font-size:0.8rem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+                            <path d="M3 3v18h18" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18 9l-5 5-4-4-3 3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Load 7-Day Trends
+                    </button>
+                    <span id="available-dates-info" style="font-size:0.75rem;color:var(--text-muted);width:100%;margin-top:0.5rem"></span>
+                </div>
+                <div id="trends-display" style="margin-top:1rem">
+                    <p style="color:var(--text-muted)">Select a date to load historical flow, or click "Load 7-Day Trends" to view sentiment trends.</p>
+                </div>
+            </div>
+        </div>
+
         <div class="filters" id="filters">
             <div class="filter-group">
                 <label class="filter-label">Ticker</label>
@@ -798,43 +875,6 @@
 
         <div class="analysis-output" id="analysis-output">
             <div class="stats-grid" id="stats-grid"></div>
-
-            <!-- Historical Trends Section -->
-            <div class="section" id="trends-section">
-                <div class="section-header" onclick="toggleSection('trends-section')">
-                    <div class="section-icon" style="background: rgba(88, 166, 255, 0.15); color: var(--accent-info);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 3v18h18M9 17V9m4 8V5m4 12v-4" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">Historical Trends</span>
-                    <span class="db-status" id="db-status">Connecting...</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="trends-content">
-                    <div class="date-picker-row" style="flex-wrap:wrap">
-                        <label style="color:var(--text-secondary);font-size:0.85rem">Select Date:</label>
-                        <input type="date" class="date-input" id="flow-date-input">
-                        <button class="export-btn visible" id="load-historical-btn" style="padding:0.4rem 0.8rem;font-size:0.8rem">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
-                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            Load Historical Flow
-                        </button>
-                        <button class="export-btn visible" id="load-trends-btn" style="padding:0.4rem 0.8rem;font-size:0.8rem">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
-                                <path d="M3 3v18h18" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M18 9l-5 5-4-4-3 3" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            Load 7-Day Trends
-                        </button>
-                        <span id="available-dates-info" style="font-size:0.75rem;color:var(--text-muted);width:100%;margin-top:0.5rem"></span>
-                    </div>
-                    <div id="trends-display">
-                        <p style="color:var(--text-muted)">Select a date to load historical flow, or click "Load 7-Day Trends" to view sentiment trends.</p>
-                    </div>
-                </div>
-            </div>
 
             <div class="section" id="correlated-signals-section" style="display:none">
                 <div class="section-header" onclick="toggleSection('correlated-signals-section')">
@@ -1072,6 +1112,13 @@
         const loadHistoricalBtn = document.getElementById('load-historical-btn');
         const availableDatesInfo = document.getElementById('available-dates-info');
         
+        // Historical filters
+        const histFilterSecurity = document.getElementById('hist-filter-security');
+        const histFilterTicker = document.getElementById('hist-filter-ticker');
+        const histFilterDte = document.getElementById('hist-filter-dte');
+        const histFilterDirection = document.getElementById('hist-filter-direction');
+        const histFilterReset = document.getElementById('hist-filter-reset');
+        
         // Set default date to today
         flowDateInput.valueAsDate = new Date();
         
@@ -1116,6 +1163,18 @@
                 
                 const uniqueDates = [...new Set(data.map(d => d.flow_date))].slice(0, 10);
                 availableDatesInfo.innerHTML = `<strong>Available dates:</strong> ${uniqueDates.join(', ')}`;
+                
+                // Also fetch unique tickers for the filter dropdown
+                const { data: tickerData } = await client
+                    .from('daily_sentiment')
+                    .select('symbol')
+                    .order('symbol');
+                
+                if (tickerData && tickerData.length > 0) {
+                    const uniqueTickers = [...new Set(tickerData.map(t => t.symbol))].sort();
+                    histFilterTicker.innerHTML = '<option value="">All Tickers</option>' + 
+                        uniqueTickers.map(t => `<option value="${t}">${t}</option>`).join('');
+                }
             } catch (err) {
                 console.error('Error loading dates:', err);
             }
@@ -1169,13 +1228,44 @@
                     CreatedTime: f.created_time,
                     CreatedDate: f.flow_date,
                     Uoa: f.uoa,
+                    Security: f.security || 'STOCK',
                     Price: f.premium && f.volume ? (f.premium / f.volume / 100) : 0
                 }));
                 
+                // Apply historical filters
+                let filtered = [...allFlows];
+                
+                if (histFilterSecurity.value) {
+                    filtered = filtered.filter(f => f.Security === histFilterSecurity.value);
+                }
+                if (histFilterTicker.value) {
+                    filtered = filtered.filter(f => f.Symbol === histFilterTicker.value);
+                }
+                if (histFilterDirection.value) {
+                    filtered = filtered.filter(f => f.CallPut === histFilterDirection.value);
+                }
+                if (histFilterDte.value) {
+                    const dte = histFilterDte.value;
+                    if (dte === '7') filtered = filtered.filter(f => f.Dte <= 7);
+                    else if (dte === '30') filtered = filtered.filter(f => f.Dte <= 30);
+                    else if (dte === '60') filtered = filtered.filter(f => f.Dte > 30 && f.Dte <= 60);
+                    else if (dte === '90') filtered = filtered.filter(f => f.Dte > 60 && f.Dte <= 90);
+                    else if (dte === '90+') filtered = filtered.filter(f => f.Dte > 90);
+                }
+                
+                // Use filtered data for analysis
+                allFlows = filtered;
+                
                 // Update filename display
+                const filterNotes = [];
+                if (histFilterSecurity.value) filterNotes.push(histFilterSecurity.value);
+                if (histFilterTicker.value) filterNotes.push(histFilterTicker.value);
+                if (histFilterDirection.value) filterNotes.push(histFilterDirection.value);
+                if (histFilterDte.value) filterNotes.push(`DTE ${histFilterDte.value}`);
+                
                 currentFileName = `Historical-${flowDate}`;
                 fileName.textContent = `${flowDate} (from database)`;
-                fileSize.textContent = `${allFlows.length} trades`;
+                fileSize.textContent = `${allFlows.length} trades${filterNotes.length ? ' [' + filterNotes.join(', ') + ']' : ''}`;
                 fileInfo.classList.add('visible');
                 
                 // Populate filters and run analysis
@@ -1209,8 +1299,11 @@
             loadTrendsBtn.disabled = true;
             loadTrendsBtn.innerHTML = '<span>Loading...</span>';
             
-            // Use ticker from filter dropdown if not passed
-            const selectedTicker = tickerFilter || filterTicker.value;
+            // Use ticker from historical filter dropdown if not passed
+            const selectedTicker = tickerFilter || histFilterTicker.value;
+            const selectedSecurity = histFilterSecurity.value;
+            const selectedDte = histFilterDte.value;
+            const selectedDirection = histFilterDirection.value;
             
             try {
                 // Get last 7 days of sentiment data
@@ -1229,13 +1322,31 @@
                     query = query.eq('symbol', selectedTicker);
                 }
                 
+                // Apply security filter if selected (ETF detection by common ETFs)
+                // Note: This is a client-side filter since security isn't in daily_sentiment
+                
                 const { data: sentimentData, error } = await query.order('flow_date', { ascending: true });
                 
                 if (error) throw error;
                 
-                if (!sentimentData || sentimentData.length === 0) {
-                    const filterMsg = selectedTicker ? ` for ${selectedTicker}` : '';
-                    trendsDisplay.innerHTML = `<p style="color:var(--text-muted)">No historical data found${filterMsg}. ${selectedTicker ? 'Try clearing the ticker filter or ' : ''}Save some flow data to start tracking trends.</p>`;
+                // Apply client-side filters
+                let filteredData = sentimentData || [];
+                
+                // Common ETFs list for security filter
+                const commonETFs = ['SPY', 'QQQ', 'IWM', 'DIA', 'VIX', 'GLD', 'SLV', 'USO', 'TLT', 'HYG', 'XLF', 'XLE', 'XLK', 'XLV', 'XLI', 'XLU', 'XLP', 'XLY', 'XLB', 'XLRE', 'VXX', 'UVXY', 'SQQQ', 'TQQQ', 'SPXS', 'SPXL', 'EEM', 'EFA', 'FXI', 'ARKK', 'KWEB', 'SMH', 'SOXX', 'XBI', 'IBB', 'XRT', 'KRE', 'JETS', 'XHB', 'ITB'];
+                
+                if (selectedSecurity === 'ETF') {
+                    filteredData = filteredData.filter(d => commonETFs.includes(d.symbol));
+                } else if (selectedSecurity === 'STOCK') {
+                    filteredData = filteredData.filter(d => !commonETFs.includes(d.symbol));
+                }
+                
+                if (!filteredData || filteredData.length === 0) {
+                    const filterMsgs = [];
+                    if (selectedTicker) filterMsgs.push(selectedTicker);
+                    if (selectedSecurity) filterMsgs.push(selectedSecurity);
+                    const filterMsg = filterMsgs.length ? ` for ${filterMsgs.join(', ')}` : '';
+                    trendsDisplay.innerHTML = `<p style="color:var(--text-muted)">No historical data found${filterMsg}. Try adjusting filters or save some flow data to start tracking trends.</p>`;
                     loadTrendsBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 3v18h18" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 9l-5 5-4-4-3 3" stroke-linecap="round" stroke-linejoin="round"/></svg> Load 7-Day Trends`;
                     loadTrendsBtn.disabled = false;
                     return;
@@ -1243,9 +1354,9 @@
                 
                 // Group by symbol
                 const symbolTrends = {};
-                const allDates = [...new Set(sentimentData.map(d => d.flow_date))].sort();
+                const allDates = [...new Set(filteredData.map(d => d.flow_date))].sort();
                 
-                sentimentData.forEach(d => {
+                filteredData.forEach(d => {
                     if (!symbolTrends[d.symbol]) {
                         symbolTrends[d.symbol] = { days: {}, totalPremium: 0 };
                     }
@@ -1263,21 +1374,51 @@
                     .sort((a, b) => b[1].totalPremium - a[1].totalPremium)
                     .slice(0, 20);
                 
-                // Render trends
-                const filterNote = selectedTicker 
-                    ? `<span style="background:var(--accent-info);color:white;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;margin-right:0.5rem">Filtered: ${selectedTicker}</span>` 
-                    : '';
-                let trendsHtml = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">${filterNote}Showing sentiment trends for ${selectedTicker ? selectedTicker : 'top 20 tickers'} over last 7 days. Dates with data: ${allDates.map(d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric'})).join(', ')}</p>`;
+                // Build filter badges
+                const filterBadges = [];
+                if (selectedTicker) filterBadges.push(`<span style="background:var(--accent-info);color:white;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem">Ticker: ${selectedTicker}</span>`);
+                if (selectedSecurity) filterBadges.push(`<span style="background:var(--accent-purple);color:white;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem">${selectedSecurity}</span>`);
+                if (selectedDte) filterBadges.push(`<span style="background:var(--accent-warning);color:white;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem">DTE ${selectedDte}</span>`);
+                if (selectedDirection) filterBadges.push(`<span style="background:${selectedDirection === 'CALL' ? 'var(--accent-bullish)' : 'var(--accent-bearish)'};color:white;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem">${selectedDirection}s</span>`);
+                const filterNote = filterBadges.length ? filterBadges.join(' ') + ' ' : '';
+                
+                let trendsHtml = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+                        <p style="color:var(--text-muted);font-size:0.85rem;margin:0">${filterNote}Showing sentiment trends for ${selectedTicker ? selectedTicker : 'top 20 tickers'} over last 7 days. Dates with data: ${allDates.map(d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric'})).join(', ')}</p>
+                        <button onclick="fetchTrendPrices()" id="fetch-trend-prices-btn" class="export-btn visible" style="padding:0.3rem 0.6rem;font-size:0.75rem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px">
+                                <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Fetch Live Prices
+                        </button>
+                    </div>
+                `;
+                
+                // Store trend symbols for price fetching
+                window.trendSymbols = sortedSymbols.map(([symbol]) => symbol);
+                window.trendData = {};
                 
                 sortedSymbols.forEach(([symbol, data]) => {
+                    // Store for price updates
+                    window.trendData[symbol] = data;
+                    
                     const days = allDates.map(date => {
                         const dayData = data.days[date];
-                        if (!dayData) return { sentiment: 'none', label: '-' };
+                        if (!dayData) return { sentiment: 'none', label: '-', bullish: 0, bearish: 0, total: 0 };
                         return { 
                             sentiment: dayData.sentiment,
-                            label: dayData.sentiment === 'bullish' ? '▲' : dayData.sentiment === 'bearish' ? '▼' : '–'
+                            label: dayData.sentiment === 'bullish' ? '▲' : dayData.sentiment === 'bearish' ? '▼' : '–',
+                            bullish: dayData.bullish || 0,
+                            bearish: dayData.bearish || 0,
+                            total: dayData.total || 0
                         };
                     });
+                    
+                    // Calculate totals
+                    const totalBullish = Object.values(data.days).reduce((s, d) => s + (d.bullish || 0), 0);
+                    const totalBearish = Object.values(data.days).reduce((s, d) => s + (d.bearish || 0), 0);
+                    const netFlow = totalBullish - totalBearish;
+                    const bullishPct = data.totalPremium > 0 ? Math.round((totalBullish / data.totalPremium) * 100) : 0;
                     
                     // Calculate streak
                     let streak = 0;
@@ -1309,22 +1450,44 @@
                         streakIndicator = `<span class="streak-indicator ${streakType === 'bullish' ? 'hot' : 'cold'}">${streak}-Day ${streakType === 'bullish' ? '▲' : '▼'}</span>`;
                     }
                     
+                    // Net sentiment indicator
+                    const netColor = netFlow > 0 ? 'var(--accent-bullish)' : netFlow < 0 ? 'var(--accent-bearish)' : 'var(--text-muted)';
+                    const netArrow = netFlow > 0 ? '▲' : netFlow < 0 ? '▼' : '–';
+                    
                     trendsHtml += `
-                        <div class="trend-ticker">
-                            <div class="trend-header">
-                                <div style="display:flex;align-items:center;gap:0.75rem">
-                                    <span class="ticker-symbol" style="font-size:1rem">${symbol}</span>
+                        <div class="trend-ticker" id="trend-${symbol}" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:1rem;margin-bottom:0.75rem">
+                            <div class="trend-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+                                <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+                                    <span class="ticker-symbol" style="font-size:1.1rem;font-weight:700">${symbol}</span>
                                     ${streakIndicator}
+                                    <span id="trend-price-${symbol}" style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-muted)"></span>
                                 </div>
-                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent-info)">${fmt(data.totalPremium)} total</span>
+                                <div style="text-align:right">
+                                    <div style="font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--accent-info);font-weight:600">${fmt(data.totalPremium)}</div>
+                                    <div style="font-size:0.7rem;color:var(--text-muted)">7-day total</div>
+                                </div>
                             </div>
-                            <div class="trend-streak">
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:0.5rem;margin-bottom:0.75rem">
+                                <div style="background:var(--bg-card);padding:0.5rem;border-radius:6px">
+                                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.2rem">Bullish</div>
+                                    <div style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent-bullish)">${fmt(totalBullish)} <span style="font-size:0.7rem;opacity:0.7">(${bullishPct}%)</span></div>
+                                </div>
+                                <div style="background:var(--bg-card);padding:0.5rem;border-radius:6px">
+                                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.2rem">Bearish</div>
+                                    <div style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent-bearish)">${fmt(totalBearish)} <span style="font-size:0.7rem;opacity:0.7">(${100-bullishPct}%)</span></div>
+                                </div>
+                                <div style="background:var(--bg-card);padding:0.5rem;border-radius:6px">
+                                    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.2rem">Net Flow</div>
+                                    <div style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:${netColor}">${netArrow} ${fmt(Math.abs(netFlow))}</div>
+                                </div>
+                            </div>
+                            <div class="trend-streak" style="display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap">
                                 ${days.map((d, i) => `
-                                    <div class="streak-day ${d.sentiment}" title="${allDates[i] || 'No data'}">
+                                    <div class="streak-day ${d.sentiment}" style="width:32px;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;cursor:help" title="${allDates[i] ? new Date(allDates[i]).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'}) : 'No data'}${d.total > 0 ? '\nBullish: ' + fmt(d.bullish) + '\nBearish: ' + fmt(d.bearish) : ''}">
                                         ${d.label}
                                     </div>
                                 `).join('')}
-                                <span style="font-size:0.7rem;color:var(--text-muted);margin-left:0.5rem">← oldest | newest →</span>
+                                <span style="font-size:0.65rem;color:var(--text-muted);margin-left:0.5rem">← oldest | newest →</span>
                             </div>
                         </div>
                     `;
@@ -1344,6 +1507,21 @@
         // Event listeners for database buttons
         loadTrendsBtn.addEventListener('click', () => loadTrends());
         loadHistoricalBtn.addEventListener('click', loadHistoricalFlow);
+        
+        // Historical filter event listeners
+        histFilterReset.addEventListener('click', () => {
+            histFilterSecurity.value = '';
+            histFilterTicker.value = '';
+            histFilterDte.value = '';
+            histFilterDirection.value = '';
+            loadTrends();
+        });
+        
+        // Auto-refresh trends when historical filters change
+        histFilterSecurity.addEventListener('change', () => loadTrends());
+        histFilterTicker.addEventListener('change', () => loadTrends());
+        histFilterDte.addEventListener('change', () => loadTrends());
+        histFilterDirection.addEventListener('change', () => loadTrends());
         
         // Check connection, load available dates, and load trends on page load
         checkDbConnection().then(connected => {
@@ -2521,6 +2699,60 @@
             
             // Re-run analysis to update displays with live prices
             applyFilters();
+        }
+        
+        // Fetch prices for trend tickers
+        async function fetchTrendPrices() {
+            const btn = document.getElementById('fetch-trend-prices-btn');
+            if (!btn || !window.trendSymbols || window.trendSymbols.length === 0) {
+                alert('No trend data loaded. Click "Load 7-Day Trends" first.');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span>Fetching...</span>';
+            
+            const tickers = window.trendSymbols;
+            let fetched = 0;
+            
+            for (const ticker of tickers) {
+                try {
+                    const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`);
+                    const data = await response.json();
+                    
+                    if (data && data.c && data.c > 0) {
+                        // Update the price display for this ticker in trends
+                        const priceEl = document.getElementById(`trend-price-${ticker}`);
+                        if (priceEl) {
+                            const changeColor = data.dp >= 0 ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                            const changeArrow = data.dp >= 0 ? '▲' : '▼';
+                            const changeSign = data.dp >= 0 ? '+' : '';
+                            priceEl.innerHTML = `<span style="color:var(--text-primary)">$${data.c.toFixed(2)}</span> <span style="color:${changeColor}">${changeArrow} ${changeSign}${data.dp.toFixed(2)}%</span>`;
+                        }
+                        
+                        // Also store in livePrices for other uses
+                        livePrices[ticker] = {
+                            current: data.c,
+                            change: data.d,
+                            changePercent: data.dp,
+                            timestamp: Date.now()
+                        };
+                    }
+                    
+                    fetched++;
+                    btn.innerHTML = `<span>Fetching ${fetched}/${tickers.length}...</span>`;
+                    
+                    // Rate limit
+                    if (fetched < tickers.length) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                } catch (err) {
+                    console.error(`Error fetching ${ticker}:`, err);
+                }
+            }
+            
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg> ✓ Prices Loaded`;
+            btn.disabled = false;
         }
         
         fetchPricesBtn.addEventListener('click', fetchLivePrices);
