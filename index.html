@@ -1205,6 +1205,20 @@
                 <div class="section-content" id="flow-characteristics"></div>
             </div>
 
+            <div class="section" id="greeks-section">
+                <div class="section-header" onclick="toggleSection('greeks-section')">
+                    <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Greeks Analysis</span>
+                    <span class="section-badge" id="greeks-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="greeks-analysis"></div>
+            </div>
+
             <div class="section" id="summary-section">
                 <div class="section-header" onclick="toggleSection('summary-section')">
                     <div class="section-icon neutral">
@@ -1480,6 +1494,153 @@
 
         const fmt = (n) => n >= 1e6 ? '$' + (n/1e6).toFixed(2) + 'M' : n >= 1e3 ? '$' + (n/1e3).toFixed(0) + 'K' : '$' + n.toFixed(0);
         const num = (n) => n.toLocaleString();
+
+        // ==================== BLACK-SCHOLES GREEKS ====================
+        // Standard normal cumulative distribution function
+        function normCDF(x) {
+            const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+            const a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+            const sign = x < 0 ? -1 : 1;
+            x = Math.abs(x) / Math.sqrt(2);
+            const t = 1.0 / (1.0 + p * x);
+            const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            return 0.5 * (1.0 + sign * y);
+        }
+        
+        // Standard normal probability density function
+        function normPDF(x) {
+            return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+        }
+        
+        // Black-Scholes option price
+        function bsPrice(S, K, T, r, sigma, isCall) {
+            if (T <= 0 || sigma <= 0) return isCall ? Math.max(0, S - K) : Math.max(0, K - S);
+            const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+            const d2 = d1 - sigma * Math.sqrt(T);
+            if (isCall) {
+                return S * normCDF(d1) - K * Math.exp(-r * T) * normCDF(d2);
+            } else {
+                return K * Math.exp(-r * T) * normCDF(-d2) - S * normCDF(-d1);
+            }
+        }
+        
+        // Calculate Implied Volatility using Newton-Raphson
+        function calcIV(S, K, T, r, marketPrice, isCall, maxIterations = 100, tolerance = 0.0001) {
+            if (T <= 0 || marketPrice <= 0) return null;
+            
+            // Initial guess based on ATM approximation
+            let sigma = Math.sqrt(2 * Math.PI / T) * (marketPrice / S);
+            sigma = Math.max(0.01, Math.min(sigma, 5)); // Clamp between 1% and 500%
+            
+            for (let i = 0; i < maxIterations; i++) {
+                const price = bsPrice(S, K, T, r, sigma, isCall);
+                const vega = bsVega(S, K, T, r, sigma);
+                
+                if (vega < 0.0001) break; // Avoid division by zero
+                
+                const diff = price - marketPrice;
+                if (Math.abs(diff) < tolerance) return sigma;
+                
+                sigma = sigma - diff / vega;
+                sigma = Math.max(0.01, Math.min(sigma, 5)); // Keep in bounds
+            }
+            return sigma;
+        }
+        
+        // Calculate Delta
+        function bsDelta(S, K, T, r, sigma, isCall) {
+            if (T <= 0 || sigma <= 0) return isCall ? (S > K ? 1 : 0) : (S < K ? -1 : 0);
+            const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+            return isCall ? normCDF(d1) : normCDF(d1) - 1;
+        }
+        
+        // Calculate Gamma
+        function bsGamma(S, K, T, r, sigma) {
+            if (T <= 0 || sigma <= 0 || S <= 0) return 0;
+            const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+            return normPDF(d1) / (S * sigma * Math.sqrt(T));
+        }
+        
+        // Calculate Theta (per day)
+        function bsTheta(S, K, T, r, sigma, isCall) {
+            if (T <= 0 || sigma <= 0) return 0;
+            const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+            const d2 = d1 - sigma * Math.sqrt(T);
+            const term1 = -(S * normPDF(d1) * sigma) / (2 * Math.sqrt(T));
+            if (isCall) {
+                return (term1 - r * K * Math.exp(-r * T) * normCDF(d2)) / 365;
+            } else {
+                return (term1 + r * K * Math.exp(-r * T) * normCDF(-d2)) / 365;
+            }
+        }
+        
+        // Calculate Vega (per 1% change in IV)
+        function bsVega(S, K, T, r, sigma) {
+            if (T <= 0 || sigma <= 0) return 0;
+            const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+            return S * Math.sqrt(T) * normPDF(d1) / 100; // Divided by 100 for per 1% IV change
+        }
+        
+        // Calculate all Greeks for a trade
+        function calculateGreeks(trade) {
+            const S = trade.Spot;
+            const K = trade.Strike;
+            const T = Math.max(trade.Dte, 0.5) / 365; // Time to expiry in years (min 0.5 day)
+            const r = 0.05; // Risk-free rate (approximate)
+            const isCall = trade.CallPut === 'CALL';
+            const optionPrice = trade.Price; // Price per share
+            const contracts = trade.Volume;
+            
+            if (!S || !K || !optionPrice || S <= 0 || K <= 0 || optionPrice <= 0) {
+                return { iv: null, delta: null, gamma: null, theta: null, vega: null, valid: false };
+            }
+            
+            // Calculate IV from market price
+            const iv = calcIV(S, K, T, r, optionPrice, isCall);
+            if (!iv || iv <= 0) {
+                return { iv: null, delta: null, gamma: null, theta: null, vega: null, valid: false };
+            }
+            
+            // Calculate Greeks
+            const delta = bsDelta(S, K, T, r, iv, isCall);
+            const gamma = bsGamma(S, K, T, r, iv);
+            const theta = bsTheta(S, K, T, r, iv, isCall);
+            const vega = bsVega(S, K, T, r, iv);
+            
+            // Position-level calculations (multiply by contracts * 100 shares)
+            const multiplier = contracts * 100;
+            
+            return {
+                iv: iv,
+                delta: delta,
+                gamma: gamma,
+                theta: theta,
+                vega: vega,
+                // Position-level
+                deltaExposure: delta * multiplier * S, // Dollar delta exposure
+                gammaExposure: gamma * multiplier,
+                thetaDecay: theta * multiplier, // Daily theta decay in dollars
+                vegaExposure: vega * multiplier,
+                valid: true
+            };
+        }
+        
+        // Format Greeks for display
+        function formatGreeks(greeks) {
+            if (!greeks || !greeks.valid) {
+                return { iv: '-', delta: '-', gamma: '-', theta: '-', vega: '-' };
+            }
+            return {
+                iv: (greeks.iv * 100).toFixed(0) + '%',
+                delta: greeks.delta.toFixed(2),
+                gamma: greeks.gamma.toFixed(3),
+                theta: greeks.theta.toFixed(3),
+                vega: greeks.vega.toFixed(2),
+                deltaExposure: fmt(Math.abs(greeks.deltaExposure)),
+                thetaDecay: fmt(Math.abs(greeks.thetaDecay))
+            };
+        }
+        // ==================== END GREEKS ====================
 
         const uploadZone = document.getElementById('upload-zone');
         const fileInput = document.getElementById('file-input');
@@ -2681,6 +2842,44 @@
                 const bl = c.trades.filter(t => t.Type === 'BLOCK').length;
                 const earningsBadge = getEarningsBadge(c.symbol);
                 const livePriceInfo = getLivePriceInfo(c.symbol, avgSpot, dir);
+                
+                // Calculate aggregated Greeks for the cluster
+                let totalDeltaExp = 0, totalGammaExp = 0, totalThetaDecay = 0, totalVegaExp = 0;
+                let validGreeksCount = 0;
+                let avgIV = 0;
+                c.trades.forEach(t => {
+                    const g = calculateGreeks(t);
+                    if (g.valid) {
+                        totalDeltaExp += g.deltaExposure;
+                        totalGammaExp += g.gammaExposure;
+                        totalThetaDecay += g.thetaDecay;
+                        totalVegaExp += g.vegaExposure;
+                        avgIV += g.iv;
+                        validGreeksCount++;
+                    }
+                });
+                avgIV = validGreeksCount > 0 ? avgIV / validGreeksCount : 0;
+                
+                const greeksHtml = validGreeksCount > 0 ? `
+                    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:0.5rem;margin-top:0.75rem;padding:0.75rem;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-color)">
+                        <div style="text-align:center">
+                            <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.2rem">Avg IV</div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:var(--accent-purple)">${(avgIV * 100).toFixed(0)}%</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.2rem">Delta Exp</div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:${totalDeltaExp >= 0 ? 'var(--accent-bullish)' : 'var(--accent-bearish)'}">${totalDeltaExp >= 0 ? '+' : ''}${fmt(totalDeltaExp)}</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.2rem">Gamma Exp</div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:var(--accent-info)">${totalGammaExp.toFixed(0)}</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.2rem">Θ Decay/Day</div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:var(--accent-bearish)">${fmt(totalThetaDecay)}</div>
+                        </div>
+                    </div>` : '';
+                
                 return `
                 <div class="flow-card">
                     <div class="flow-card-header">
@@ -2703,7 +2902,8 @@
                         <div class="detail-item"><div class="detail-label">Trades</div><div class="detail-value">${c.trades.length} (${sw}S/${bl}B)</div></div>
                         <div class="detail-item"><div class="detail-label">Spot</div><div class="detail-value">$${avgSpot.toFixed(2)}</div></div>
                     </div>
-                    <div class="flow-checklist">
+                    ${greeksHtml}
+                    <div class="flow-checklist" style="margin-top:0.75rem">
                         ${c.checks.map(ch => `<span class="check-item ${ch.p === true ? 'pass' : ch.p === 'partial' ? 'neutral' : 'fail'}">${ch.p === true ? '✓' : ch.p === 'partial' ? '~' : '✗'} ${ch.n}</span>`).join('')}
                     </div>
                     <div class="conviction-score ${level}">Conviction: ${level.toUpperCase()} (${c.score}/${c.max})</div>
@@ -2837,21 +3037,36 @@
                 const oiDot = ['YELLOW','MAGENTA'].includes(t.Color) ? `<span style="color:${t.Color==='YELLOW'?'var(--accent-warning)':'var(--accent-purple)'}">●</span>` : '<span style="color:var(--text-muted)">○</span>';
                 const earningsBadge = getEarningsBadge(t.Symbol);
                 const livePriceInfo = getLivePriceInfo(t.Symbol, t.Spot, dir);
-                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:var(--bg-secondary);border-radius:8px;margin-bottom:0.5rem">
-                    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                        <span class="ticker-symbol ticker-clickable" style="font-size:1rem">${t.Symbol}</span>
-                        <span class="direction-badge ${dir}" style="font-size:0.65rem">${t.CallPut}</span>
-                        ${earningsBadge}
-                        ${livePriceInfo.badge}
-                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-secondary)">$${t.Strike} · ${t.ExpirationDate}</span>
-                        <span style="font-size:0.7rem;color:var(--text-muted)">${t.Type}</span>
-                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:${sideColor}">${sideLabel}</span>
-                        <span style="font-size:0.8rem">${oiDot}</span>
+                
+                // Calculate Greeks for this trade
+                const greeks = calculateGreeks(t);
+                const greeksDisplay = greeks.valid ? `
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--accent-purple);background:rgba(163,113,247,0.1);padding:0.15rem 0.4rem;border-radius:4px">IV ${(greeks.iv * 100).toFixed(0)}%</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--text-secondary);background:var(--bg-card);padding:0.15rem 0.4rem;border-radius:4px">Δ ${greeks.delta.toFixed(2)}</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--accent-bearish);background:rgba(248,81,73,0.1);padding:0.15rem 0.4rem;border-radius:4px">Θ ${greeks.theta.toFixed(3)}</span>
+                ` : '';
+                
+                return `<div style="background:var(--bg-secondary);border-radius:8px;margin-bottom:0.5rem;padding:0.75rem">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+                            <span class="ticker-symbol ticker-clickable" style="font-size:1rem">${t.Symbol}</span>
+                            <span class="direction-badge ${dir}" style="font-size:0.65rem">${t.CallPut}</span>
+                            ${earningsBadge}
+                            ${livePriceInfo.badge}
+                            <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-secondary)">$${t.Strike} · ${t.ExpirationDate}</span>
+                            <span style="font-size:0.7rem;color:var(--text-muted)">${t.Type}</span>
+                            <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:${sideColor}">${sideLabel}</span>
+                            <span style="font-size:0.8rem">${oiDot}</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:1rem">
+                            <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-muted)">${num(t.Volume)} contracts</span>
+                            <span style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:var(--accent-info)">${fmt(t.Premium)}</span>
+                        </div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:1.5rem">
-                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-muted)">${num(t.Volume)} contracts</span>
-                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:var(--accent-info)">${fmt(t.Premium)}</span>
-                    </div>
+                    ${greeks.valid ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap">
+                        ${greeksDisplay}
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--text-muted)">Delta Exp: ${fmt(greeks.deltaExposure)}</span>
+                    </div>` : ''}
                 </div>`;
             }).join('');
             document.getElementById('large-trades').innerHTML = (highConvictionOnly ? '<p style="color:var(--accent-info);font-size:0.85rem;margin-bottom:1rem">🎯 High Conviction: Showing only trades with confirming AlertStream signals</p>' : '') + (ltHtml || '<p style="color:var(--text-muted)">No trades matching criteria ($200K+, AA/BB, OTM, Yellow/Magenta).</p>');
@@ -2955,6 +3170,210 @@
             `;
             
             document.getElementById('flow-characteristics').innerHTML = moneynessHtml + aggressionHtml;
+
+            // ==================== GREEKS ANALYSIS ====================
+            // Calculate Greeks for all flows and aggregate by ticker
+            const greeksData = {
+                byTicker: {},
+                highGamma: [],
+                highTheta: [],
+                highIV: [],
+                lowIV: [],
+                totalDeltaExposure: 0,
+                totalGammaExposure: 0,
+                totalThetaDecay: 0,
+                validCount: 0
+            };
+            
+            flows.forEach(f => {
+                const g = calculateGreeks(f);
+                if (g.valid) {
+                    greeksData.validCount++;
+                    greeksData.totalDeltaExposure += g.deltaExposure;
+                    greeksData.totalGammaExposure += g.gammaExposure;
+                    greeksData.totalThetaDecay += g.thetaDecay;
+                    
+                    // Aggregate by ticker
+                    if (!greeksData.byTicker[f.Symbol]) {
+                        greeksData.byTicker[f.Symbol] = { 
+                            symbol: f.Symbol, 
+                            deltaExp: 0, 
+                            gammaExp: 0, 
+                            thetaDecay: 0, 
+                            vegaExp: 0,
+                            trades: 0,
+                            avgIV: 0,
+                            ivSum: 0
+                        };
+                    }
+                    greeksData.byTicker[f.Symbol].deltaExp += g.deltaExposure;
+                    greeksData.byTicker[f.Symbol].gammaExp += g.gammaExposure;
+                    greeksData.byTicker[f.Symbol].thetaDecay += g.thetaDecay;
+                    greeksData.byTicker[f.Symbol].vegaExp += g.vegaExposure;
+                    greeksData.byTicker[f.Symbol].ivSum += g.iv;
+                    greeksData.byTicker[f.Symbol].trades++;
+                    
+                    // Track high gamma trades (near ATM with gamma > 0.05)
+                    const moneyness = Math.abs(f.Strike - f.Spot) / f.Spot;
+                    if (g.gamma > 0.03 && moneyness < 0.05 && f.Premium >= 50000) {
+                        greeksData.highGamma.push({ ...f, greeks: g, moneyness });
+                    }
+                    
+                    // Track high theta trades (>$500/day decay per contract)
+                    if (Math.abs(g.theta) > 0.5 && f.Premium >= 50000) {
+                        greeksData.highTheta.push({ ...f, greeks: g });
+                    }
+                    
+                    // Track IV extremes
+                    if (g.iv > 0.8 && f.Premium >= 50000) {
+                        greeksData.highIV.push({ ...f, greeks: g });
+                    } else if (g.iv < 0.25 && f.Premium >= 50000) {
+                        greeksData.lowIV.push({ ...f, greeks: g });
+                    }
+                }
+            });
+            
+            // Calculate average IV per ticker
+            Object.values(greeksData.byTicker).forEach(t => {
+                t.avgIV = t.trades > 0 ? t.ivSum / t.trades : 0;
+            });
+            
+            // Sort tickers by absolute delta exposure
+            const topDeltaTickers = Object.values(greeksData.byTicker)
+                .sort((a, b) => Math.abs(b.deltaExp) - Math.abs(a.deltaExp))
+                .slice(0, 10);
+            
+            // Sort high gamma by gamma value
+            greeksData.highGamma.sort((a, b) => b.greeks.gamma - a.greeks.gamma);
+            greeksData.highTheta.sort((a, b) => Math.abs(b.greeks.thetaDecay) - Math.abs(a.greeks.thetaDecay));
+            greeksData.highIV.sort((a, b) => b.greeks.iv - a.greeks.iv);
+            
+            document.getElementById('greeks-count').textContent = greeksData.validCount;
+            
+            // Build Greeks Analysis HTML
+            const greeksSummaryHtml = `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:1rem;margin-bottom:1.5rem">
+                    <div style="background:var(--bg-secondary);border-radius:8px;padding:1rem;text-align:center;border-left:3px solid var(--accent-info)">
+                        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.25rem">Total Δ Exposure</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:600;color:${greeksData.totalDeltaExposure >= 0 ? 'var(--accent-bullish)' : 'var(--accent-bearish)'}">${greeksData.totalDeltaExposure >= 0 ? '+' : ''}${fmt(greeksData.totalDeltaExposure)}</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted)">stock equivalent</div>
+                    </div>
+                    <div style="background:var(--bg-secondary);border-radius:8px;padding:1rem;text-align:center;border-left:3px solid var(--accent-warning)">
+                        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.25rem">Total Γ Exposure</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:600;color:var(--accent-warning)">${greeksData.totalGammaExposure.toFixed(0)}</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted)">delta change/$1</div>
+                    </div>
+                    <div style="background:var(--bg-secondary);border-radius:8px;padding:1rem;text-align:center;border-left:3px solid var(--accent-bearish)">
+                        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.25rem">Daily Θ Decay</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:600;color:var(--accent-bearish)">${fmt(Math.abs(greeksData.totalThetaDecay))}</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted)">time decay/day</div>
+                    </div>
+                    <div style="background:var(--bg-secondary);border-radius:8px;padding:1rem;text-align:center;border-left:3px solid var(--accent-purple)">
+                        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.25rem">Greeks Calculated</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:600;color:var(--accent-purple)">${greeksData.validCount}</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted)">of ${flows.length} trades</div>
+                    </div>
+                </div>
+            `;
+            
+            const deltaByTickerHtml = topDeltaTickers.length ? `
+                <div style="margin-bottom:1.5rem">
+                    <h4 style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;font-weight:500">Delta Exposure by Ticker</h4>
+                    <div style="display:flex;flex-direction:column;gap:0.4rem">
+                        ${topDeltaTickers.map(t => {
+                            const maxDelta = Math.max(...topDeltaTickers.map(x => Math.abs(x.deltaExp)));
+                            const pct = Math.abs(t.deltaExp) / maxDelta * 100;
+                            const color = t.deltaExp >= 0 ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                            return `<div style="display:grid;grid-template-columns:60px 1fr 100px 80px;gap:0.75rem;align-items:center">
+                                <span class="ticker-clickable" style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:600">${t.symbol}</span>
+                                <div style="background:var(--bg-card);border-radius:4px;height:20px;overflow:hidden">
+                                    <div style="background:${color};height:100%;width:${pct}%;opacity:0.7"></div>
+                                </div>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:${color};text-align:right">${t.deltaExp >= 0 ? '+' : ''}${fmt(t.deltaExp)}</span>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted);text-align:right">IV ${(t.avgIV * 100).toFixed(0)}%</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
+            const highGammaHtml = greeksData.highGamma.length ? `
+                <div style="margin-bottom:1.5rem">
+                    <h4 style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.5rem;font-weight:500">⚡ High Gamma Plays <span style="font-weight:400;color:var(--text-muted)">(explosive potential)</span></h4>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.75rem">Near-ATM options with high gamma that will accelerate quickly on movement</p>
+                    <div style="display:flex;flex-direction:column;gap:0.4rem">
+                        ${greeksData.highGamma.slice(0, 5).map(t => {
+                            const dir = t.CallPut === 'CALL' ? 'bullish' : 'bearish';
+                            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--accent-warning)">
+                                <div style="display:flex;align-items:center;gap:0.5rem">
+                                    <span class="ticker-clickable" style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:600">${t.Symbol}</span>
+                                    <span class="direction-badge ${dir}" style="font-size:0.6rem">${t.CallPut}</span>
+                                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">$${t.Strike}</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:1rem">
+                                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--accent-warning)">Γ ${t.greeks.gamma.toFixed(3)}</span>
+                                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-secondary)">Δ ${t.greeks.delta.toFixed(2)}</span>
+                                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--accent-info)">${fmt(t.Premium)}</span>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
+            const highThetaHtml = greeksData.highTheta.length ? `
+                <div style="margin-bottom:1.5rem">
+                    <h4 style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.5rem;font-weight:500">🔥 High Theta Burns <span style="font-weight:400;color:var(--text-muted)">(urgent time decay)</span></h4>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.75rem">Positions bleeding significant premium daily - expect fast moves</p>
+                    <div style="display:flex;flex-direction:column;gap:0.4rem">
+                        ${greeksData.highTheta.slice(0, 5).map(t => {
+                            const dir = t.CallPut === 'CALL' ? 'bullish' : 'bearish';
+                            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-radius:6px;border-left:3px solid var(--accent-bearish)">
+                                <div style="display:flex;align-items:center;gap:0.5rem">
+                                    <span class="ticker-clickable" style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:600">${t.Symbol}</span>
+                                    <span class="direction-badge ${dir}" style="font-size:0.6rem">${t.CallPut}</span>
+                                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">$${t.Strike} · ${t.Dte}d</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:1rem">
+                                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--accent-bearish)">Θ ${fmt(Math.abs(t.greeks.thetaDecay))}/day</span>
+                                    <span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--accent-info)">${fmt(t.Premium)}</span>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
+            const ivAnalysisHtml = (greeksData.highIV.length || greeksData.lowIV.length) ? `
+                <div>
+                    <h4 style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.5rem;font-weight:500">📊 IV Analysis</h4>
+                    ${greeksData.highIV.length ? `
+                        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem">High IV (>80%) - expensive options, expecting big moves:</p>
+                        <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem">
+                            ${greeksData.highIV.slice(0, 8).map(t => `
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;padding:0.25rem 0.5rem;background:rgba(163,113,247,0.15);border-radius:4px;color:var(--accent-purple)">
+                                    <span class="ticker-clickable">${t.Symbol}</span> ${(t.greeks.iv * 100).toFixed(0)}%
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    ${greeksData.lowIV.length ? `
+                        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem">Low IV (<25%) - cheap options, potential value:</p>
+                        <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+                            ${greeksData.lowIV.slice(0, 8).map(t => `
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;padding:0.25rem 0.5rem;background:rgba(63,185,80,0.15);border-radius:4px;color:var(--accent-bullish)">
+                                    <span class="ticker-clickable">${t.Symbol}</span> ${(t.greeks.iv * 100).toFixed(0)}%
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            ` : '';
+            
+            document.getElementById('greeks-analysis').innerHTML = greeksData.validCount > 0 
+                ? greeksSummaryHtml + deltaByTickerHtml + highGammaHtml + highThetaHtml + ivAnalysisHtml
+                : '<p style="color:var(--text-muted)">Unable to calculate Greeks. Ensure trades have valid spot price, strike, and option price data.</p>';
+            // ==================== END GREEKS ANALYSIS ====================
 
             // Summary with Net Sentiment - require 60%+ directional dominance, limit 10
             const summ = {};
@@ -3228,7 +3647,7 @@
             
             // Clone other sections and remove collapsed state
             const sections = ['correlated-signals-section', 'high-conviction-section', 'large-trades-section', 
-                            'flow-characteristics-section', 'summary-section', 'expiration-heatmap-section',
+                            'flow-characteristics-section', 'greeks-section', 'summary-section', 'expiration-heatmap-section',
                             'golden-sweeps-section', 'unusual-section'];
             const clonedSections = {};
             sections.forEach(id => {
@@ -3314,6 +3733,7 @@ ${clonedSections['high-conviction-section']}
 ${cloneClustering.outerHTML}
 ${clonedSections['large-trades-section']}
 ${clonedSections['flow-characteristics-section']}
+${clonedSections['greeks-section']}
 ${clonedSections['summary-section']}
 ${clonedSections['expiration-heatmap-section']}
 ${clonedSections['golden-sweeps-section']}
