@@ -24,6 +24,7 @@
             --accent-warning: #d29922;
             --accent-info: #58a6ff;
             --accent-purple: #a371f7;
+            --sidebar-width: 400px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -34,6 +35,263 @@
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
+        }
+
+        /* Main layout with sidebar */
+        .page-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            max-width: calc(100% - var(--sidebar-width));
+            transition: max-width 0.3s ease;
+        }
+
+        .chart-sidebar {
+            width: var(--sidebar-width);
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .chart-sidebar.collapsed {
+            transform: translateX(calc(var(--sidebar-width) - 40px));
+        }
+
+        .chart-sidebar.collapsed .sidebar-content {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 80px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .sidebar-toggle svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .chart-sidebar.collapsed .sidebar-toggle svg {
+            transform: rotate(180deg);
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-card);
+        }
+
+        .sidebar-ticker {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-ticker-symbol {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .sidebar-ticker-price {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-search {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .sidebar-search-input {
+            flex: 1;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .sidebar-search-input::placeholder {
+            color: var(--text-muted);
+            text-transform: none;
+        }
+
+        .sidebar-search-input:focus {
+            border-color: var(--accent-info);
+        }
+
+        .sidebar-search-btn {
+            padding: 0.6rem 0.75rem;
+            background: var(--accent-info);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-search-btn:hover {
+            background: #4a9eff;
+            transform: scale(1.02);
+        }
+
+        .sidebar-search-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .timeframe-controls {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+
+        .timeframe-btn {
+            padding: 0.35rem 0.6rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .timeframe-btn:hover {
+            border-color: var(--border-highlight);
+            color: var(--text-secondary);
+        }
+
+        .timeframe-btn.active {
+            background: var(--accent-info);
+            border-color: var(--accent-info);
+            color: white;
+        }
+
+        .chart-container {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .chart-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .sidebar-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            transition: opacity 0.2s ease;
+        }
+
+        .chart-placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .chart-placeholder svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Clickable ticker styling */
+        .ticker-clickable {
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-radius: 4px;
+            padding: 0 0.25rem;
+            margin: 0 -0.25rem;
+        }
+
+        .ticker-clickable:hover {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--accent-info);
+        }
+
+        /* Responsive: hide sidebar on mobile */
+        @media (max-width: 1200px) {
+            .main-content {
+                max-width: 100%;
+            }
+            
+            .chart-sidebar {
+                transform: translateX(100%);
+            }
+            
+            .chart-sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .sidebar-toggle {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chart-sidebar {
+                width: 100%;
+            }
+            
+            .sidebar-toggle {
+                left: -40px;
+                top: 20px;
+                transform: none;
+            }
         }
 
         .noise-overlay {
@@ -667,7 +925,9 @@
 </head>
 <body>
     <div class="noise-overlay"></div>
-    <div class="container">
+    <div class="page-layout">
+        <div class="main-content">
+            <div class="container">
         <header>
             <div class="logo-mark">
                 <svg viewBox="0 0 24 24" stroke-width="2">
@@ -1000,6 +1260,52 @@
             </div>
         </div>
     </div>
+        </div><!-- end main-content -->
+
+        <!-- Chart Sidebar -->
+        <div class="chart-sidebar" id="chart-sidebar">
+            <div class="sidebar-toggle" id="sidebar-toggle" onclick="toggleChartSidebar()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <div class="sidebar-search">
+                        <input type="text" id="sidebar-search-input" class="sidebar-search-input" placeholder="Enter symbol..." maxlength="5">
+                        <button id="sidebar-search-btn" class="sidebar-search-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="sidebar-ticker">
+                        <span class="sidebar-ticker-symbol" id="sidebar-ticker-symbol">SPY</span>
+                        <span class="sidebar-ticker-price" id="sidebar-ticker-price"></span>
+                    </div>
+                    <div class="timeframe-controls" id="timeframe-controls">
+                        <button class="timeframe-btn" data-interval="1" data-range="1D">1D</button>
+                        <button class="timeframe-btn" data-interval="5" data-range="5D">5D</button>
+                        <button class="timeframe-btn active" data-interval="D" data-range="1M">1M</button>
+                        <button class="timeframe-btn" data-interval="D" data-range="3M">3M</button>
+                        <button class="timeframe-btn" data-interval="D" data-range="6M">6M</button>
+                        <button class="timeframe-btn" data-interval="W" data-range="12M">1Y</button>
+                        <button class="timeframe-btn" data-interval="M" data-range="60M">5Y</button>
+                    </div>
+                </div>
+                <div class="chart-container" id="chart-container">
+                    <div class="chart-placeholder" id="chart-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M3 3v18h18M9 17V9m4 8V5m4 12v-4" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <p>Click any ticker symbol<br>or search above</p>
+                    </div>
+                    <div id="tradingview-widget" style="height:100%;display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div><!-- end page-layout -->
 
     <script>
         function toggleSection(sectionId) {
@@ -1018,6 +1324,159 @@
                 chevron.style.transform = 'rotate(0deg)';
             }
         }
+
+        // Chart Sidebar Functions
+        let currentChartSymbol = 'SPY';
+        let currentInterval = 'D';
+        let currentRange = '3M';
+        
+        function toggleChartSidebar() {
+            const sidebar = document.getElementById('chart-sidebar');
+            const mainContent = document.querySelector('.main-content');
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                mainContent.style.maxWidth = '100%';
+            } else {
+                mainContent.style.maxWidth = 'calc(100% - var(--sidebar-width))';
+            }
+        }
+        
+        function loadChart(symbol, interval = currentInterval, range = currentRange) {
+            currentChartSymbol = symbol;
+            currentInterval = interval;
+            currentRange = range;
+            
+            const symbolDisplay = document.getElementById('sidebar-ticker-symbol');
+            const placeholder = document.getElementById('chart-placeholder');
+            const widgetContainer = document.getElementById('tradingview-widget');
+            const sidebar = document.getElementById('chart-sidebar');
+            
+            // Update symbol display
+            symbolDisplay.textContent = symbol;
+            
+            // Show chart, hide placeholder
+            placeholder.style.display = 'none';
+            widgetContainer.style.display = 'block';
+            
+            // Open sidebar if collapsed
+            if (sidebar.classList.contains('collapsed')) {
+                toggleChartSidebar();
+            }
+            
+            // Clear previous widget
+            widgetContainer.innerHTML = '';
+            
+            // Create TradingView widget
+            const widget = document.createElement('div');
+            widget.className = 'tradingview-widget-container';
+            widget.style.height = '100%';
+            widget.style.width = '100%';
+            
+            const widgetInner = document.createElement('div');
+            widgetInner.id = 'tradingview_chart';
+            widgetInner.style.height = '100%';
+            widget.appendChild(widgetInner);
+            
+            widgetContainer.appendChild(widget);
+            
+            // Load TradingView script
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/tv.js';
+            script.onload = function() {
+                new TradingView.widget({
+                    "autosize": true,
+                    "symbol": symbol,
+                    "interval": interval,
+                    "timezone": "America/New_York",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "en",
+                    "toolbar_bg": "#111820",
+                    "enable_publishing": false,
+                    "hide_top_toolbar": false,
+                    "hide_legend": false,
+                    "save_image": false,
+                    "container_id": "tradingview_chart",
+                    "hide_volume": false,
+                    "backgroundColor": "#0a0e14",
+                    "gridColor": "#2a3544",
+                    "studies": ["Volume@tv-basicstudies"]
+                });
+            };
+            document.head.appendChild(script);
+            
+            // Update price if we have it
+            if (livePrices[symbol]) {
+                updateSidebarPrice(symbol);
+            }
+        }
+        
+        function updateSidebarPrice(symbol) {
+            const priceEl = document.getElementById('sidebar-ticker-price');
+            const price = livePrices[symbol];
+            if (price) {
+                const changeColor = price.changePercent >= 0 ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                const changeSign = price.changePercent >= 0 ? '+' : '';
+                priceEl.innerHTML = `$${price.current.toFixed(2)} <span style="color:${changeColor}">${changeSign}${price.changePercent.toFixed(2)}%</span>`;
+            }
+        }
+        
+        function handleTickerClick(symbol) {
+            loadChart(symbol);
+        }
+        
+        // Setup timeframe controls
+        document.getElementById('timeframe-controls').addEventListener('click', function(e) {
+            if (e.target.classList.contains('timeframe-btn')) {
+                // Update active state
+                document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Load chart with new timeframe
+                const interval = e.target.dataset.interval;
+                const range = e.target.dataset.range;
+                loadChart(currentChartSymbol, interval, range);
+            }
+        });
+        
+        // Sidebar search functionality
+        const sidebarSearchInput = document.getElementById('sidebar-search-input');
+        const sidebarSearchBtn = document.getElementById('sidebar-search-btn');
+        
+        function searchTicker() {
+            const symbol = sidebarSearchInput.value.trim().toUpperCase();
+            if (symbol && symbol.length >= 1 && symbol.length <= 5 && /^[A-Z]+$/.test(symbol)) {
+                loadChart(symbol);
+                sidebarSearchInput.value = '';
+            } else if (symbol) {
+                // Invalid symbol
+                sidebarSearchInput.style.borderColor = 'var(--accent-bearish)';
+                setTimeout(() => {
+                    sidebarSearchInput.style.borderColor = '';
+                }, 1500);
+            }
+        }
+        
+        sidebarSearchBtn.addEventListener('click', searchTicker);
+        sidebarSearchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchTicker();
+            }
+        });
+        
+        // Make ticker symbols clickable (delegate to document)
+        document.addEventListener('click', function(e) {
+            const tickerEl = e.target.closest('.ticker-clickable');
+            if (tickerEl) {
+                e.stopPropagation(); // Prevent parent click handlers (like toggleCluster)
+                const symbol = tickerEl.textContent.trim();
+                if (symbol && symbol.length <= 5 && /^[A-Z]+$/.test(symbol)) {
+                    handleTickerClick(symbol);
+                }
+            }
+        });
 
         const fmt = (n) => n >= 1e6 ? '$' + (n/1e6).toFixed(2) + 'M' : n >= 1e3 ? '$' + (n/1e3).toFixed(0) + 'K' : '$' + n.toFixed(0);
         const num = (n) => n.toLocaleString();
@@ -1458,7 +1917,7 @@
                         <div class="trend-ticker" id="trend-${symbol}" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:1rem;margin-bottom:0.75rem">
                             <div class="trend-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
                                 <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                                    <span class="ticker-symbol" style="font-size:1.1rem;font-weight:700">${symbol}</span>
+                                    <span class="ticker-symbol ticker-clickable" style="font-size:1.1rem;font-weight:700">${symbol}</span>
                                     ${streakIndicator}
                                     <span id="trend-price-${symbol}" style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-muted)"></span>
                                 </div>
@@ -2055,7 +2514,7 @@
                     
                     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:var(--bg-secondary);border-radius:8px;margin-bottom:0.5rem;border-left:3px solid ${cs.direction === 'bullish' ? 'var(--accent-bullish)' : 'var(--accent-bearish)'}">
                         <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                            <span class="ticker-symbol" style="font-size:1rem">${cs.ticker}</span>
+                            <span class="ticker-symbol ticker-clickable" style="font-size:1rem">${cs.ticker}</span>
                             ${confirmBadge}
                             ${signalBadges}
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:4px;background:var(--bg-card)">
@@ -2226,7 +2685,7 @@
                 <div class="flow-card">
                     <div class="flow-card-header">
                         <div class="flow-ticker">
-                            <span class="ticker-symbol">${c.symbol}</span>
+                            <span class="ticker-symbol ticker-clickable">${c.symbol}</span>
                             <span class="direction-badge ${dir}">${c.cp}</span>
                             ${earningsBadge}
                             ${livePriceInfo.badge}
@@ -2320,7 +2779,7 @@
                         <div style="display:flex;align-items:center;gap:0.75rem">
                             <svg id="chevron-${i}" style="width:14px;height:14px;stroke:var(--text-muted);transition:transform 0.2s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">${c.latestDate}</span>
-                            <span class="ticker-symbol" style="font-size:1rem">${c.symbol}</span>
+                            <span class="ticker-symbol ticker-clickable" style="font-size:1rem">${c.symbol}</span>
                             <span class="direction-badge ${dir}" style="font-size:0.65rem">${c.cp}</span>
                             ${earningsBadge}
                             ${livePriceInfo.badge}
@@ -2380,7 +2839,7 @@
                 const livePriceInfo = getLivePriceInfo(t.Symbol, t.Spot, dir);
                 return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:var(--bg-secondary);border-radius:8px;margin-bottom:0.5rem">
                     <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                        <span class="ticker-symbol" style="font-size:1rem">${t.Symbol}</span>
+                        <span class="ticker-symbol ticker-clickable" style="font-size:1rem">${t.Symbol}</span>
                         <span class="direction-badge ${dir}" style="font-size:0.65rem">${t.CallPut}</span>
                         ${earningsBadge}
                         ${livePriceInfo.badge}
@@ -2528,7 +2987,7 @@
                         const netClass = net > 0 ? 'bullish' : net < 0 ? 'bearish' : '';
                         const netSign = net > 0 ? '+' : '';
                         return `<tr>
-                            <td class="ticker">${t.sym}</td>
+                            <td class="ticker"><span class="ticker-clickable">${t.sym}</span></td>
                             <td>${t.n}</td>
                             <td>${num(t.vol)}</td>
                             <td style="color:var(--accent-bullish)">${fmt(t.bullish)}</td>
@@ -2590,7 +3049,7 @@
             const gsRows = golden.map(t => {
                 const dir = t.CallPut === 'CALL' ? 'bullish' : 'bearish';
                 return `<div style="display:grid;grid-template-columns:70px 85px 70px 55px 70px 70px 70px 70px 70px 70px 40px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-left:3px solid var(--accent-warning);border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
-                    <span style="font-weight:600;color:var(--text-primary)">${t.Symbol}</span>
+                    <span class="ticker-clickable" style="font-weight:600;color:var(--text-primary)">${t.Symbol}</span>
                     <span style="color:var(--text-muted)">${t.CreatedTime||'-'}</span>
                     <span class="direction-badge ${dir}" style="font-size:0.6rem;padding:0.15rem 0.35rem">${t.CallPut}</span>
                     <span style="color:var(--accent-bullish)">ABV ASK</span>
@@ -2629,7 +3088,7 @@
                 const oiDot = ['YELLOW','MAGENTA'].includes(t.Color) ? `<span style="color:${t.Color==='YELLOW'?'var(--accent-warning)':'var(--accent-purple)'}">●</span>` : '<span style="color:var(--text-muted)">○</span>';
                 const sideCol = ['A','AA'].includes(t.Side) ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
                 return `<div style="display:grid;grid-template-columns:70px 85px 55px 70px 55px 55px 70px 70px 70px 70px 70px 40px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
-                    <span style="font-weight:600;color:var(--text-primary)">${t.Symbol}</span>
+                    <span class="ticker-clickable" style="font-weight:600;color:var(--text-primary)">${t.Symbol}</span>
                     <span style="color:var(--text-muted)">${t.CreatedTime||'-'}</span>
                     <span style="color:var(--text-secondary)">${t.Type}</span>
                     <span class="direction-badge ${dir}" style="font-size:0.6rem;padding:0.15rem 0.35rem">${t.CallPut}</span>
