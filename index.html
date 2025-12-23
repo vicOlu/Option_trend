@@ -25,6 +25,7 @@
             --accent-info: #58a6ff;
             --accent-purple: #a371f7;
             --sidebar-width: 400px;
+            --left-sidebar-width: 320px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37,7 +38,7 @@
             min-height: 100vh;
         }
 
-        /* Main layout with sidebar */
+        /* Main layout with sidebars */
         .page-layout {
             display: flex;
             min-height: 100vh;
@@ -46,9 +47,191 @@
         .main-content {
             flex: 1;
             max-width: calc(100% - var(--sidebar-width));
-            transition: max-width 0.3s ease;
+            margin-left: 0;
+            transition: max-width 0.3s ease, margin-left 0.3s ease;
         }
 
+        .main-content.left-open {
+            margin-left: var(--left-sidebar-width);
+            max-width: calc(100% - var(--sidebar-width) - var(--left-sidebar-width));
+        }
+
+        /* Left Sidebar */
+        .left-sidebar {
+            width: var(--left-sidebar-width);
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transform: translateX(calc(-1 * var(--left-sidebar-width)));
+            transition: transform 0.3s ease;
+        }
+
+        .left-sidebar.open {
+            transform: translateX(0);
+        }
+
+        .left-sidebar .sidebar-content {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1;
+        }
+
+        .left-sidebar.open .sidebar-content {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .left-sidebar-toggle {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+            border: 1px solid var(--border-highlight);
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--accent-info);
+            transition: left 0.3s ease, background 0.2s ease, color 0.2s ease;
+            z-index: 999;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+        }
+
+        .left-sidebar-toggle.open {
+            left: var(--left-sidebar-width);
+        }
+
+        .left-sidebar-toggle:hover {
+            background: linear-gradient(135deg, var(--bg-card-hover), var(--bg-card));
+            color: var(--text-primary);
+            border-color: var(--accent-info);
+        }
+
+        .left-sidebar-toggle svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .left-sidebar-toggle.open svg {
+            transform: rotate(180deg);
+        }
+
+        .left-sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-card);
+        }
+
+        .left-sidebar-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .left-sidebar-title svg {
+            width: 18px;
+            height: 18px;
+            color: var(--accent-info);
+        }
+
+        .left-sidebar-section {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .left-sidebar-section-title {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mini-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .mini-stat:last-child {
+            border-bottom: none;
+        }
+
+        .mini-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .mini-stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .mini-stat-value.bullish { color: var(--accent-bullish); }
+        .mini-stat-value.bearish { color: var(--accent-bearish); }
+        .mini-stat-value.neutral { color: var(--accent-info); }
+
+        /* Mini Top Tickers */
+        .mini-ticker-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .mini-ticker-row:last-child {
+            border-bottom: none;
+        }
+
+        .mini-ticker-symbol {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .mini-ticker-symbol:hover {
+            color: var(--accent-info);
+        }
+
+        .mini-ticker-net {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .mini-ticker-premium {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-info);
+        }
+
+        /* Right Chart Sidebar */
         .chart-sidebar {
             width: var(--sidebar-width);
             position: fixed;
@@ -60,11 +243,19 @@
             display: flex;
             flex-direction: column;
             z-index: 100;
-            transition: transform 0.3s ease;
+            transition: width 0.3s ease, transform 0.3s ease;
+        }
+
+        .chart-sidebar.expanded {
+            width: 650px;
         }
 
         .chart-sidebar.collapsed {
             transform: translateX(calc(var(--sidebar-width) - 40px));
+        }
+
+        .chart-sidebar.collapsed.expanded {
+            transform: translateX(calc(650px - 40px));
         }
 
         .chart-sidebar.collapsed .sidebar-content {
@@ -104,6 +295,44 @@
 
         .chart-sidebar.collapsed .sidebar-toggle svg {
             transform: rotate(180deg);
+        }
+
+        .sidebar-expand-toggle {
+            position: absolute;
+            left: -40px;
+            top: calc(50% + 50px);
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-expand-toggle:hover {
+            background: var(--bg-card);
+            color: var(--accent-info);
+        }
+
+        .sidebar-expand-toggle svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .chart-sidebar.expanded .sidebar-expand-toggle svg {
+            transform: rotate(180deg);
+        }
+
+        .chart-sidebar.collapsed .sidebar-expand-toggle {
+            display: none;
         }
 
         .sidebar-header {
@@ -267,6 +496,12 @@
         @media (max-width: 1200px) {
             .main-content {
                 max-width: 100%;
+                margin-left: 0;
+            }
+            
+            .main-content.left-open {
+                margin-left: 0;
+                max-width: 100%;
             }
             
             .chart-sidebar {
@@ -280,6 +515,14 @@
             .sidebar-toggle {
                 display: flex;
             }
+            
+            .left-sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .left-sidebar.open {
+                transform: translateX(0);
+            }
         }
 
         @media (max-width: 768px) {
@@ -287,10 +530,28 @@
                 width: 100%;
             }
             
+            .left-sidebar {
+                width: 100%;
+            }
+            
             .sidebar-toggle {
                 left: -40px;
                 top: 20px;
                 transform: none;
+            }
+            
+            .sidebar-expand-toggle {
+                display: none;
+            }
+            
+            .left-sidebar-toggle {
+                top: 20px;
+                transform: none;
+            }
+            
+            .left-sidebar-toggle.open {
+                left: 100%;
+                margin-left: -40px;
             }
         }
 
@@ -301,7 +562,7 @@
             pointer-events: none;
             opacity: 0.03;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-            z-index: 1000;
+            z-index: 50;
         }
 
         .container {
@@ -498,6 +759,74 @@
 
         .filter-count span {
             color: var(--accent-info);
+        }
+
+        .daily-sentiment {
+            display: none;
+            width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-info);
+        }
+
+        .daily-sentiment.visible {
+            display: block;
+        }
+
+        .daily-sentiment-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .daily-sentiment-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .daily-sentiment-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-card);
+            border-radius: 6px;
+        }
+
+        .daily-sentiment-arrow {
+            font-size: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .daily-sentiment-consistency {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            margin-left: 0.5rem;
+        }
+
+        .daily-sentiment-consistency.bullish {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--accent-bullish);
+        }
+
+        .daily-sentiment-consistency.bearish {
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--accent-bearish);
+        }
+
+        .daily-sentiment-consistency.mixed {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--accent-warning);
         }
 
         .analysis-output { display: none; }
@@ -926,6 +1255,85 @@
 <body>
     <div class="noise-overlay"></div>
     <div class="page-layout">
+        <!-- Left Sidebar Toggle -->
+        <div class="left-sidebar-toggle" id="left-sidebar-toggle" onclick="toggleLeftSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+            </svg>
+        </div>
+        
+        <!-- Left Sidebar - Stats & Positions -->
+        <div class="left-sidebar" id="left-sidebar">
+            <div class="sidebar-content">
+                <div class="left-sidebar-header">
+                    <div class="left-sidebar-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18M9 17V9m4 8V5m4 12v-4" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Dashboard
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="left-sidebar-section">
+                    <div class="left-sidebar-section-title">Quick Stats</div>
+                    <div id="left-stats">
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">Total Premium</span>
+                            <span class="mini-stat-value neutral" id="left-total-premium">-</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">Bullish Flow</span>
+                            <span class="mini-stat-value bullish" id="left-bullish-flow">-</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">Bearish Flow</span>
+                            <span class="mini-stat-value bearish" id="left-bearish-flow">-</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">Net Sentiment</span>
+                            <span class="mini-stat-value" id="left-net-sentiment">-</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">Sweeps</span>
+                            <span class="mini-stat-value neutral" id="left-sweeps">-</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">Aggression %</span>
+                            <span class="mini-stat-value neutral" id="left-aggression">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Flow Summary -->
+                <div class="left-sidebar-section">
+                    <div class="left-sidebar-section-title">Flow Characteristics</div>
+                    <div id="left-flow-chars">
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">ITM</span>
+                            <span class="mini-stat-value" id="left-itm">-</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">ATM</span>
+                            <span class="mini-stat-value" id="left-atm">-</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-stat-label">OTM</span>
+                            <span class="mini-stat-value" id="left-otm">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Top Tickers -->
+                <div class="left-sidebar-section">
+                    <div class="left-sidebar-section-title">Top Tickers</div>
+                    <div id="left-top-tickers">
+                        <p style="color:var(--text-muted);font-size:0.8rem">Load flow data to see top tickers</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="main-content">
             <div class="container">
         <header>
@@ -978,8 +1386,8 @@
             </button>
         </div>
 
-        <!-- Historical Data Section - Always Visible -->
-        <div class="section" id="historical-section" style="margin-bottom:1.5rem">
+        <!-- Historical Data Section - Collapsed by Default -->
+        <div class="section collapsed" id="historical-section" style="margin-bottom:1.5rem">
             <div class="section-header" onclick="toggleSection('historical-section')">
                 <div class="section-icon" style="background: rgba(88, 166, 255, 0.15); color: var(--accent-info);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1106,6 +1514,15 @@
                     <option value="500000">$500K+</option>
                 </select>
             </div>
+            <div class="filter-group">
+                <label class="filter-label">Option Price</label>
+                <select class="filter-select" id="filter-price">
+                    <option value="">All</option>
+                    <option value="5">≤ $5.00</option>
+                    <option value="10">≤ $10.00</option>
+                    <option value="20">≤ $20.00</option>
+                </select>
+            </div>
             <div class="filter-toggle">
                 <input type="checkbox" id="filter-exclude-itm">
                 <label for="filter-exclude-itm">Exclude ITM</label>
@@ -1124,6 +1541,7 @@
             </div>
             <button class="filter-reset" id="filter-reset">Reset Filters</button>
             <div class="filter-count" id="filter-count"></div>
+            <div class="daily-sentiment" id="daily-sentiment"></div>
         </div>
 
         <div class="loading" id="loading">
@@ -1133,115 +1551,6 @@
 
         <div class="analysis-output" id="analysis-output">
             <div class="stats-grid" id="stats-grid"></div>
-
-            <div class="section" id="correlated-signals-section" style="display:none">
-                <div class="section-header" onclick="toggleSection('correlated-signals-section')">
-                    <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">Correlated Signals</span>
-                    <span class="section-badge" id="correlated-signals-count">0</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="correlated-signals"></div>
-            </div>
-
-            <div class="section" id="high-conviction-section">
-                <div class="section-header" onclick="toggleSection('high-conviction-section')">
-                    <div class="section-icon bullish">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">High Conviction Flows</span>
-                    <span class="section-badge" id="high-conviction-count">0</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="high-conviction-flows"></div>
-            </div>
-
-            <div class="section" id="clustering-section">
-                <div class="section-header" onclick="toggleSection('clustering-section')">
-                    <div class="section-icon neutral">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">Trade Clustering</span>
-                    <span class="section-badge" id="clustering-count">0</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="clustering-analysis"></div>
-            </div>
-
-            <div class="section" id="large-trades-section">
-                <div class="section-header" onclick="toggleSection('large-trades-section')">
-                    <div class="section-icon neutral">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">Largest Individual Trades</span>
-                    <span class="section-badge" id="large-trades-count">0</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="large-trades"></div>
-            </div>
-
-            <div class="section" id="flow-characteristics-section">
-                <div class="section-header" onclick="toggleSection('flow-characteristics-section')">
-                    <div class="section-icon neutral">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">Flow Characteristics</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="flow-characteristics"></div>
-            </div>
-
-            <div class="section" id="greeks-section">
-                <div class="section-header" onclick="toggleSection('greeks-section')">
-                    <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">Greeks Analysis</span>
-                    <span class="section-badge" id="greeks-count">0</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="greeks-analysis"></div>
-            </div>
-
-            <div class="section" id="summary-section">
-                <div class="section-header" onclick="toggleSection('summary-section')">
-                    <div class="section-icon neutral">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">Top Tickers by Premium</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="summary-table"></div>
-            </div>
-
-            <div class="section" id="expiration-heatmap-section">
-                <div class="section-header" onclick="toggleSection('expiration-heatmap-section')">
-                    <div class="section-icon neutral">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="section-title">Expiration Heat Map</span>
-                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="section-content" id="expiration-heatmap"></div>
-            </div>
 
             <div class="section" id="golden-sweeps-section">
                 <div class="section-header" onclick="toggleSection('golden-sweeps-section')">
@@ -1257,7 +1566,90 @@
                 <div class="section-content" id="golden-sweeps"></div>
             </div>
 
-            <div class="section" id="unusual-section">
+            <div class="section" id="correlated-signals-section" style="display:none">
+                <div class="section-header" onclick="toggleSection('correlated-signals-section')">
+                    <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Correlated Signals</span>
+                    <span class="section-badge" id="correlated-signals-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="correlated-signals"></div>
+            </div>
+
+            <div class="section collapsed" id="high-conviction-section">
+                <div class="section-header" onclick="toggleSection('high-conviction-section')">
+                    <div class="section-icon bullish">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">High Conviction Flows</span>
+                    <span class="section-badge" id="high-conviction-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="high-conviction-flows"></div>
+            </div>
+
+            <div class="section collapsed" id="clustering-section">
+                <div class="section-header" onclick="toggleSection('clustering-section')">
+                    <div class="section-icon neutral">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Trade Clustering</span>
+                    <span class="section-badge" id="clustering-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="clustering-analysis"></div>
+            </div>
+
+            <div class="section collapsed" id="large-trades-section">
+                <div class="section-header" onclick="toggleSection('large-trades-section')">
+                    <div class="section-icon neutral">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Largest Individual Trades</span>
+                    <span class="section-badge" id="large-trades-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="large-trades"></div>
+            </div>
+
+            <div class="section collapsed" id="greeks-section">
+                <div class="section-header" onclick="toggleSection('greeks-section')">
+                    <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Greeks Analysis</span>
+                    <span class="section-badge" id="greeks-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="greeks-analysis"></div>
+            </div>
+
+            <div class="section collapsed" id="expiration-heatmap-section">
+                <div class="section-header" onclick="toggleSection('expiration-heatmap-section')">
+                    <div class="section-icon neutral">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Expiration Heat Map</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="expiration-heatmap"></div>
+            </div>
+
+            <div class="section collapsed" id="unusual-section">
                 <div class="section-header" onclick="toggleSection('unusual-section')">
                     <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1279,6 +1671,12 @@
             <div class="sidebar-toggle" id="sidebar-toggle" onclick="toggleChartSidebar()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="15 18 9 12 15 6"/>
+                </svg>
+            </div>
+            <div class="sidebar-expand-toggle" id="sidebar-expand-toggle" onclick="toggleSidebarExpand()" title="Expand/Collapse Chart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="11 17 6 12 11 7"/>
+                    <polyline points="18 17 13 12 18 7"/>
                 </svg>
             </div>
             <div class="sidebar-content">
@@ -1350,8 +1748,97 @@
             if (sidebar.classList.contains('collapsed')) {
                 mainContent.style.maxWidth = '100%';
             } else {
-                mainContent.style.maxWidth = 'calc(100% - var(--sidebar-width))';
+                const sidebarWidth = sidebar.classList.contains('expanded') ? '650px' : 'var(--sidebar-width)';
+                mainContent.style.maxWidth = `calc(100% - ${sidebarWidth})`;
             }
+        }
+        
+        function toggleSidebarExpand() {
+            const sidebar = document.getElementById('chart-sidebar');
+            const mainContent = document.querySelector('.main-content');
+            sidebar.classList.toggle('expanded');
+            
+            if (!sidebar.classList.contains('collapsed')) {
+                const sidebarWidth = sidebar.classList.contains('expanded') ? '650px' : 'var(--sidebar-width)';
+                mainContent.style.maxWidth = `calc(100% - ${sidebarWidth})`;
+            }
+        }
+        
+        // Left Sidebar Functions
+        function toggleLeftSidebar() {
+            const leftSidebar = document.getElementById('left-sidebar');
+            const leftToggle = document.getElementById('left-sidebar-toggle');
+            const mainContent = document.querySelector('.main-content');
+            leftSidebar.classList.toggle('open');
+            leftToggle.classList.toggle('open');
+            mainContent.classList.toggle('left-open');
+        }
+        
+        // Update left sidebar stats
+        function updateLeftSidebar(flows) {
+            const total = flows.reduce((s, f) => s + f.Premium, 0);
+            const calls = flows.filter(f => f.CallPut === 'CALL');
+            const puts = flows.filter(f => f.CallPut === 'PUT');
+            const bullish = calls.filter(f => ['A','AA'].includes(f.Side)).reduce((s,f) => s + f.Premium, 0)
+                + puts.filter(f => ['B','BB'].includes(f.Side)).reduce((s,f) => s + f.Premium, 0);
+            const bearish = puts.filter(f => ['A','AA'].includes(f.Side)).reduce((s,f) => s + f.Premium, 0)
+                + calls.filter(f => ['B','BB'].includes(f.Side)).reduce((s,f) => s + f.Premium, 0);
+            const sweeps = flows.filter(f => f.Type === 'SWEEP').length;
+            const aggressiveCount = flows.filter(f => ['AA','BB'].includes(f.Side)).length;
+            const aggressionPct = flows.length > 0 ? Math.round((aggressiveCount / flows.length) * 100) : 0;
+            const net = bullish - bearish;
+            
+            document.getElementById('left-total-premium').textContent = fmt(total);
+            document.getElementById('left-bullish-flow').textContent = fmt(bullish);
+            document.getElementById('left-bearish-flow').textContent = fmt(bearish);
+            
+            const netEl = document.getElementById('left-net-sentiment');
+            netEl.textContent = (net >= 0 ? '+' : '') + fmt(net);
+            netEl.className = 'mini-stat-value ' + (net > 0 ? 'bullish' : net < 0 ? 'bearish' : 'neutral');
+            
+            document.getElementById('left-sweeps').textContent = sweeps.toLocaleString();
+            document.getElementById('left-aggression').textContent = aggressionPct + '%';
+            
+            // Moneyness
+            const moneyness = { itm: 0, atm: 0, otm: 0 };
+            flows.forEach(f => {
+                const diff = (f.Strike - f.Spot) / f.Spot;
+                const isCall = f.CallPut === 'CALL';
+                if (Math.abs(diff) <= 0.02) {
+                    moneyness.atm += f.Premium;
+                } else if ((isCall && diff < 0) || (!isCall && diff > 0)) {
+                    moneyness.itm += f.Premium;
+                } else {
+                    moneyness.otm += f.Premium;
+                }
+            });
+            
+            document.getElementById('left-itm').textContent = fmt(moneyness.itm);
+            document.getElementById('left-atm').textContent = fmt(moneyness.atm);
+            document.getElementById('left-otm').textContent = fmt(moneyness.otm);
+            
+            // Top Tickers
+            const summ = {};
+            flows.forEach(f => {
+                if (!summ[f.Symbol]) summ[f.Symbol] = { sym: f.Symbol, prem: 0, bullish: 0, bearish: 0 };
+                summ[f.Symbol].prem += f.Premium;
+                const isBullish = (f.CallPut === 'CALL' && ['A','AA'].includes(f.Side)) || (f.CallPut === 'PUT' && ['B','BB'].includes(f.Side));
+                const isBearish = (f.CallPut === 'PUT' && ['A','AA'].includes(f.Side)) || (f.CallPut === 'CALL' && ['B','BB'].includes(f.Side));
+                if (isBullish) summ[f.Symbol].bullish += f.Premium;
+                if (isBearish) summ[f.Symbol].bearish += f.Premium;
+            });
+            const top = Object.values(summ).sort((a,b) => b.prem - a.prem).slice(0, 8);
+            
+            document.getElementById('left-top-tickers').innerHTML = top.map(t => {
+                const net = t.bullish - t.bearish;
+                const netColor = net > 0 ? 'var(--accent-bullish)' : net < 0 ? 'var(--accent-bearish)' : 'var(--text-muted)';
+                const arrow = net > 0 ? '▲' : net < 0 ? '▼' : '';
+                return `<div class="mini-ticker-row">
+                    <span class="mini-ticker-symbol ticker-clickable">${t.sym}</span>
+                    <span class="mini-ticker-net" style="color:${netColor}">${arrow}${fmt(Math.abs(net))}</span>
+                    <span class="mini-ticker-premium">${fmt(t.prem)}</span>
+                </div>`;
+            }).join('');
         }
         
         function loadChart(symbol, interval = currentInterval, range = currentRange) {
@@ -1490,7 +1977,13 @@
             }
         });
 
-        const fmt = (n) => n >= 1e6 ? '$' + (n/1e6).toFixed(2) + 'M' : n >= 1e3 ? '$' + (n/1e3).toFixed(0) + 'K' : '$' + n.toFixed(0);
+        const fmt = (n) => {
+            const abs = Math.abs(n);
+            const sign = n < 0 ? '-' : '';
+            if (abs >= 1e6) return sign + '$' + (abs/1e6).toFixed(2) + 'M';
+            if (abs >= 1e3) return sign + '$' + (abs/1e3).toFixed(0) + 'K';
+            return sign + '$' + abs.toFixed(0);
+        };
         const num = (n) => n.toLocaleString();
 
         // ==================== BLACK-SCHOLES GREEKS ====================
@@ -1668,12 +2161,14 @@
         const filterType = document.getElementById('filter-type');
         const filterDirection = document.getElementById('filter-direction');
         const filterPremium = document.getElementById('filter-premium');
+        const filterPrice = document.getElementById('filter-price');
         const filterExcludeItm = document.getElementById('filter-exclude-itm');
         const filterUniqueTickers = document.getElementById('filter-unique-tickers');
         const filterRequireBlocks = document.getElementById('filter-require-blocks');
         const filterHighConviction = document.getElementById('filter-high-conviction');
         const filterReset = document.getElementById('filter-reset');
         const filterCount = document.getElementById('filter-count');
+        const dailySentiment = document.getElementById('daily-sentiment');
         
         // AlertStream elements
         const alertUploadZone = document.getElementById('alert-upload-zone');
@@ -2359,6 +2854,7 @@
         filterType.addEventListener('change', applyFilters);
         filterDirection.addEventListener('change', applyFilters);
         filterPremium.addEventListener('change', applyFilters);
+        filterPrice.addEventListener('change', applyFilters);
         filterExcludeItm.addEventListener('change', applyFilters);
         filterUniqueTickers.addEventListener('change', applyFilters);
         filterRequireBlocks.addEventListener('change', applyFilters);
@@ -2372,6 +2868,7 @@
             filterType.value = '';
             filterDirection.value = '';
             filterPremium.value = '';
+            filterPrice.value = '';
             filterExcludeItm.checked = false;
             filterUniqueTickers.checked = false;
             filterRequireBlocks.checked = false;
@@ -2411,6 +2908,10 @@
                 const minPremium = parseInt(filterPremium.value);
                 filtered = filtered.filter(f => f.Premium >= minPremium);
             }
+            if (filterPrice.value) {
+                const maxPrice = parseFloat(filterPrice.value);
+                filtered = filtered.filter(f => f.Price <= maxPrice);
+            }
             if (filterExcludeItm.checked) {
                 filtered = filtered.filter(f => {
                     // For calls: keep only if strike >= spot (ATM/OTM)
@@ -2422,6 +2923,86 @@
             }
             
             filterCount.innerHTML = `Showing <span>${filtered.length}</span> of <span>${allFlows.length}</span> trades`;
+            
+            // Daily sentiment calculation (only when ticker is filtered)
+            if (filterTicker.value && filtered.length > 0) {
+                // Group by date
+                const byDate = {};
+                filtered.forEach(f => {
+                    const date = f.CreatedDate || 'Unknown';
+                    if (!byDate[date]) byDate[date] = { bullish: 0, bearish: 0 };
+                    
+                    // Determine if bullish or bearish
+                    const isBullish = (f.CallPut === 'CALL' && ['A','AA'].includes(f.Side)) || 
+                                     (f.CallPut === 'PUT' && ['B','BB'].includes(f.Side));
+                    const isBearish = (f.CallPut === 'PUT' && ['A','AA'].includes(f.Side)) || 
+                                     (f.CallPut === 'CALL' && ['B','BB'].includes(f.Side));
+                    
+                    if (isBullish) byDate[date].bullish += f.Premium;
+                    if (isBearish) byDate[date].bearish += f.Premium;
+                });
+                
+                // Sort dates chronologically
+                const sortedDates = Object.keys(byDate).sort((a, b) => {
+                    const dateA = new Date(a);
+                    const dateB = new Date(b);
+                    return dateA - dateB;
+                });
+                
+                // Only show if multiple dates
+                if (sortedDates.length >= 1) {
+                    let bullishDays = 0, bearishDays = 0;
+                    
+                    const flowItems = sortedDates.map(date => {
+                        const net = byDate[date].bullish - byDate[date].bearish;
+                        const isBullish = net > 0;
+                        if (isBullish) bullishDays++;
+                        else if (net < 0) bearishDays++;
+                        
+                        const arrow = isBullish ? '▲' : '▼';
+                        const color = isBullish ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                        const sign = net >= 0 ? '+' : '';
+                        
+                        // Format date nicely (e.g., "Dec 18")
+                        const dateObj = new Date(date);
+                        const formatted = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        
+                        return `<span class="daily-sentiment-item">
+                            <span style="color:var(--text-muted)">${formatted}</span>
+                            <span style="color:${color}">${arrow}${sign}${fmt(net)}</span>
+                        </span>`;
+                    }).join('<span class="daily-sentiment-arrow">→</span>');
+                    
+                    // Consistency indicator
+                    const totalDays = sortedDates.length;
+                    let consistencyClass, consistencyText;
+                    
+                    if (bullishDays === totalDays) {
+                        consistencyClass = 'bullish';
+                        consistencyText = `${bullishDays}/${totalDays} Bullish ✓`;
+                    } else if (bearishDays === totalDays) {
+                        consistencyClass = 'bearish';
+                        consistencyText = `${bearishDays}/${totalDays} Bearish ✓`;
+                    } else {
+                        consistencyClass = 'mixed';
+                        consistencyText = `Mixed (${bullishDays}▲ ${bearishDays}▼)`;
+                    }
+                    
+                    dailySentiment.innerHTML = `
+                        <div class="daily-sentiment-label">${filterTicker.value} Daily Sentiment</div>
+                        <div class="daily-sentiment-flow">
+                            ${flowItems}
+                            <span class="daily-sentiment-consistency ${consistencyClass}">${consistencyText}</span>
+                        </div>
+                    `;
+                    dailySentiment.classList.add('visible');
+                } else {
+                    dailySentiment.classList.remove('visible');
+                }
+            } else {
+                dailySentiment.classList.remove('visible');
+            }
+            
             analyze(filtered, filterHighConviction.checked, filterUniqueTickers.checked, filterRequireBlocks.checked);
         }
 
@@ -2502,6 +3083,9 @@
                 <div class="stat-card"><div class="stat-value">${aggressionPct}%</div><div class="stat-label">Aggression Ratio</div></div>
                 <div class="stat-card"><div class="stat-value">${flows.length}</div><div class="stat-label">Total Trades</div></div>
             `;
+            
+            // Update left sidebar stats
+            updateLeftSidebar(flows);
 
             // Correlated Signals (AlertStream cross-reference)
             const flowTickers = [...new Set(flows.map(f => f.Symbol))];
@@ -2791,45 +3375,56 @@
 
             function score(c) {
                 let s = 0; const checks = [];
+                
+                // Sweeps are CRITICAL for conviction - urgency indicator
+                const sw = c.trades.filter(t => t.Type === 'SWEEP').length;
+                const swRatio = sw / c.trades.length;
+                if (swRatio >= 0.5) { s += 3; checks.push({n:'Sweep Heavy',p:true}); }
+                else if (sw >= 2) { s += 2; checks.push({n:'Multi-Sweep',p:true}); }
+                else if (sw >= 1) { s += 1; checks.push({n:'Has Sweep',p:'partial'}); }
+                else { checks.push({n:'No Sweeps',p:false}); }
+                
+                // Execution at/above ask shows aggressive buying
                 const atAsk = c.trades.filter(t => ['A','AA'].includes(t.Side)).length / c.trades.length;
-                if (atAsk >= 0.8) { s += 2; checks.push({n:'At Ask',p:true}); }
-                else if (atAsk >= 0.5) { s += 1; checks.push({n:'At Ask',p:'partial'}); }
+                if (atAsk >= 0.8) { s += 2; checks.push({n:'At Ask 80%+',p:true}); }
+                else if (atAsk >= 0.5) { s += 1; checks.push({n:'At Ask 50%+',p:'partial'}); }
                 else checks.push({n:'At Ask',p:false});
 
+                // OI exceeded indicates opening positions
                 const oi = c.trades.filter(t => ['YELLOW','MAGENTA'].includes(t.Color)).length / c.trades.length;
                 if (oi >= 0.5) { s += 2; checks.push({n:'OI Exceeded',p:true}); }
                 else if (oi > 0) { s += 1; checks.push({n:'OI Exceeded',p:'partial'}); }
                 else checks.push({n:'OI Exceeded',p:false});
 
-                const sw = c.trades.filter(t => t.Type === 'SWEEP').length;
-                if (sw >= 2) { s += 1; checks.push({n:'Sweeps',p:true}); }
-                else if (sw >= 1) checks.push({n:'Sweeps',p:'partial'});
-                else checks.push({n:'Sweeps',p:false});
-
+                // Premium size
                 if (c.prem >= 500000) { s += 2; checks.push({n:'$500K+',p:true}); }
                 else if (c.prem >= 200000) { s += 1; checks.push({n:'$200K+',p:true}); }
                 else if (c.prem >= 100000) checks.push({n:'$100K+',p:'partial'});
                 else checks.push({n:'Notional',p:false});
 
+                // DTE sweet spot (not too short, not too long)
                 const avgDte = c.trades.reduce((s,t) => s + t.Dte, 0) / c.trades.length;
                 if (avgDte >= 10 && avgDte <= 60) { s += 1; checks.push({n:'Good DTE',p:true}); }
                 else if (avgDte >= 3 && avgDte <= 90) checks.push({n:'DTE',p:'partial'});
                 else checks.push({n:'DTE',p:false});
 
+                // Strike proximity to spot
                 const avgSpot = c.trades.reduce((s,t) => s + t.Spot, 0) / c.trades.length;
                 const diff = Math.abs(c.strike - avgSpot) / avgSpot;
                 if (diff <= 0.05) { s += 1; checks.push({n:'ATM',p:true}); }
                 else if (diff <= 0.10) checks.push({n:'Near ATM',p:'partial'});
                 else checks.push({n:'OTM',p:false});
 
-                if (c.trades.length >= 5) { s += 2; checks.push({n:'5+ Trades',p:true}); }
-                else if (c.trades.length >= 3) { s += 1; checks.push({n:'3+ Trades',p:true}); }
+                // Multiple trades at same strike shows accumulation
+                if (c.trades.length >= 5) { s += 1; checks.push({n:'5+ Trades',p:true}); }
+                else if (c.trades.length >= 3) checks.push({n:'3+ Trades',p:'partial'});
 
-                return { score: s, checks, max: 11 };
+                return { score: s, checks, max: 12, hasSweeps: sw > 0 };
             }
 
             const scored = sigClusters.map(c => ({...c, ...score(c)})).sort((a,b) => b.score - a.score);
-            let highConv = scored.filter(c => c.score >= 7);
+            // Require at least 1 sweep AND score >= 6 for high conviction
+            let highConv = scored.filter(c => c.score >= 6 && c.hasSweeps);
             // Filter to unique tickers if enabled (keep highest scoring entry per ticker)
             if (uniqueTickersOnly) {
                 const seenTickers = new Set();
@@ -3182,7 +3777,7 @@
                 </div>
             `;
             
-            document.getElementById('flow-characteristics').innerHTML = moneynessHtml + aggressionHtml;
+            // Flow characteristics section removed - data still used in left sidebar
 
             // ==================== GREEKS ANALYSIS ====================
             // Calculate Greeks for all flows and aggregate by ticker
@@ -3401,34 +3996,7 @@
                 if (isBullish) summ[f.Symbol].bullish += f.Premium;
                 if (isBearish) summ[f.Symbol].bearish += f.Premium;
             });
-            // Filter for 60%+ directional dominance
-            const top = Object.values(summ)
-                .filter(t => {
-                    const total = t.bullish + t.bearish;
-                    if (total === 0) return false;
-                    const dominant = Math.max(t.bullish, t.bearish);
-                    return (dominant / total) >= 0.6;
-                })
-                .sort((a,b) => b.prem - a.prem)
-                .slice(0, 10);
-            document.getElementById('summary-table').innerHTML = `
-                <table class="summary-table">
-                    <thead><tr><th>Ticker</th><th>Trades</th><th>Contracts</th><th>Bullish</th><th>Bearish</th><th>Net</th><th>Premium</th></tr></thead>
-                    <tbody>${top.map(t => {
-                        const net = t.bullish - t.bearish;
-                        const netClass = net > 0 ? 'bullish' : net < 0 ? 'bearish' : '';
-                        const netSign = net > 0 ? '+' : '';
-                        return `<tr>
-                            <td class="ticker"><span class="ticker-clickable">${t.sym}</span></td>
-                            <td>${t.n}</td>
-                            <td>${num(t.vol)}</td>
-                            <td style="color:var(--accent-bullish)">${fmt(t.bullish)}</td>
-                            <td style="color:var(--accent-bearish)">${fmt(t.bearish)}</td>
-                            <td style="color:var(--accent-${netClass});font-weight:600">${netSign}${fmt(Math.abs(net))}</td>
-                            <td class="premium">${fmt(t.prem)}</td>
-                        </tr>`;
-                    }).join('')}</tbody>
-                </table>`;
+            // Top Tickers section removed - data still used in left sidebar
 
             // Expiration Heat Map
             const expMap = {};
@@ -3469,22 +4037,63 @@
                 </div>` : '<p style="color:var(--text-muted)">No expiration data available.</p>';
             document.getElementById('expiration-heatmap').innerHTML = expHtml;
 
-            // Golden Sweeps
-            const strikeCounts = {};
-            flows.forEach(f => { const k = `${f.Symbol}|${f.Strike}|${f.ExpirationDate}|${f.CallPut}`; strikeCounts[k] = (strikeCounts[k]||0) + 1; });
-            const golden = flows.filter(f => {
-                const k = `${f.Symbol}|${f.Strike}|${f.ExpirationDate}|${f.CallPut}`;
-                return f.Type === 'SWEEP' && f.Color === 'YELLOW' && f.Side === 'AA' && f.Premium >= 100000 && strikeCounts[k] <= 2;
-            }).sort((a,b) => b.Premium - a.Premium);
+            // Golden Sweeps - Bullish (AA Calls) and Bearish (AA Puts, BB Calls)
+            // Show top trade per ticker/strike
+            const goldenCandidates = flows.filter(f => {
+                if (f.Type !== 'SWEEP' || f.Color !== 'YELLOW' || f.Premium < 100000) return false;
+                
+                // Bullish: AA + CALL (aggressive call buying)
+                const isBullish = f.Side === 'AA' && f.CallPut === 'CALL';
+                // Bearish: AA + PUT (aggressive put buying) OR BB + CALL (aggressive call selling)
+                const isBearish = (f.Side === 'AA' && f.CallPut === 'PUT') || (f.Side === 'BB' && f.CallPut === 'CALL');
+                
+                return isBullish || isBearish;
+            });
+            
+            // Group by ticker/strike and keep only the top premium trade
+            const goldenByStrike = {};
+            goldenCandidates.forEach(f => {
+                const k = `${f.Symbol}|${f.Strike}`;
+                if (!goldenByStrike[k] || f.Premium > goldenByStrike[k].Premium) {
+                    goldenByStrike[k] = f;
+                }
+            });
+            
+            // Count all flows per ticker/strike for display
+            const strikeCountsByTicker = {};
+            flows.forEach(f => { 
+                const k = `${f.Symbol}|${f.Strike}`; 
+                strikeCountsByTicker[k] = (strikeCountsByTicker[k]||0) + 1; 
+            });
+            
+            const golden = Object.values(goldenByStrike).sort((a,b) => b.Premium - a.Premium);
             document.getElementById('golden-sweeps-count').textContent = golden.length;
             
             const gsRows = golden.map(t => {
-                const dir = t.CallPut === 'CALL' ? 'bullish' : 'bearish';
-                return `<div style="display:grid;grid-template-columns:70px 85px 70px 55px 70px 70px 70px 70px 70px 70px 40px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-left:3px solid var(--accent-warning);border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
+                // Determine direction based on signal type
+                const isBullish = t.Side === 'AA' && t.CallPut === 'CALL';
+                const dir = isBullish ? 'bullish' : 'bearish';
+                const sideLabel = t.Side === 'AA' ? 'ABV ASK' : 'BLW BID';
+                const sideColor = t.Side === 'AA' ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                const k = `${t.Symbol}|${t.Strike}`;
+                const flowsAtStrike = strikeCountsByTicker[k];
+                
+                // Determine action: AA = Buying, BB = Selling/Writing
+                const isBuying = t.Side === 'AA';
+                const actionLabel = isBuying ? 'BTO' : 'STO';
+                const actionFull = isBuying ? 'Buy to Open' : 'Sell to Open';
+                const actionColor = isBuying ? 'var(--accent-bullish)' : 'var(--accent-purple)';
+                // More context: what does this action mean?
+                const actionContext = isBuying 
+                    ? (t.CallPut === 'CALL' ? 'Long Calls' : 'Long Puts')
+                    : (t.CallPut === 'CALL' ? 'Short Calls' : 'Short Puts');
+                
+                return `<div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 70px 70px 70px 40px 50px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-left:3px solid ${isBullish ? 'var(--accent-bullish)' : 'var(--accent-bearish)'};border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
                     <span class="ticker-clickable" style="font-weight:600;color:var(--text-primary)">${t.Symbol}</span>
                     <span style="color:var(--text-muted)">${t.CreatedTime||'-'}</span>
                     <span class="direction-badge ${dir}" style="font-size:0.6rem;padding:0.15rem 0.35rem">${t.CallPut}</span>
-                    <span style="color:var(--accent-bullish)">ABV ASK</span>
+                    <span style="color:${sideColor};font-size:0.65rem">${sideLabel}</span>
+                    <span style="color:${actionColor};font-size:0.65rem;font-weight:600" title="${actionFull} - ${actionContext}">${actionLabel}</span>
                     <span style="color:var(--text-secondary)">$${t.Strike}</span>
                     <span style="color:var(--text-secondary)">$${t.Spot.toFixed(2)}</span>
                     <span style="color:var(--text-primary)">${num(t.Volume)}</span>
@@ -3492,17 +4101,18 @@
                     <span style="color:var(--accent-warning);font-weight:600">${fmt(t.Premium)}</span>
                     <span style="color:var(--text-muted)">${t.ExpirationDate}</span>
                     <span style="color:var(--text-muted)">${t.Dte}d</span>
+                    <span style="color:var(--text-muted);font-size:0.65rem">${flowsAtStrike}@str</span>
                 </div>`;
             }).join('');
             
             const gsHtml = golden.length ? `
-                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">Yellow sweeps, above ask (AA), $100K+ premium, with only 1-2 trades at that strike</p>
-                <div style="overflow-x:auto"><div style="min-width:820px">
-                    <div style="display:grid;grid-template-columns:70px 85px 70px 55px 70px 70px 70px 70px 70px 70px 40px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
-                        <span>Symbol</span><span>Time</span><span>C/P</span><span>Side</span><span>Strike</span><span>Spot</span><span>Volume</span><span>Price</span><span>Premium</span><span>Exp</span><span>DTE</span>
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">Yellow sweeps with $100K+ premium (top trade per strike). <span style="color:var(--accent-bullish)">BTO = Buy to Open</span> · <span style="color:var(--accent-purple)">STO = Sell to Open (Writing)</span></p>
+                <div style="overflow-x:auto"><div style="min-width:950px">
+                    <div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 70px 70px 70px 40px 50px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
+                        <span>Symbol</span><span>Time</span><span>C/P</span><span>Side</span><span>Action</span><span>Strike</span><span>Spot</span><span>Volume</span><span>Price</span><span>Premium</span><span>Exp</span><span>DTE</span><span>Flows</span>
                     </div>
                     ${gsRows}
-                </div></div>` : '<p style="color:var(--text-muted)">No golden sweeps found (Yellow sweeps, above ask AA, $100K+ premium, 1-2 trades at strike).</p>';
+                </div></div>` : '<p style="color:var(--text-muted)">No golden sweeps found (Yellow sweeps, AA/BB, $100K+ premium).</p>';
             document.getElementById('golden-sweeps').innerHTML = gsHtml;
 
             // Unusual - $100K+ AND (AA/BB OR Yellow/Magenta), limit 10
@@ -3659,9 +4269,8 @@
             cloneClustering.querySelectorAll('.cluster-header svg').forEach(el => el.style.display = 'none');
             
             // Clone other sections and remove collapsed state
-            const sections = ['correlated-signals-section', 'high-conviction-section', 'large-trades-section', 
-                            'flow-characteristics-section', 'greeks-section', 'summary-section', 'expiration-heatmap-section',
-                            'golden-sweeps-section', 'unusual-section'];
+            const sections = ['golden-sweeps-section', 'correlated-signals-section', 'high-conviction-section', 'large-trades-section', 
+                            'greeks-section', 'expiration-heatmap-section', 'unusual-section'];
             const clonedSections = {};
             sections.forEach(id => {
                 const el = document.getElementById(id);
@@ -3741,15 +4350,13 @@ h1{font-size:1.5rem;font-weight:700;margin-bottom:0.25rem}
 <h1>Options Flow Report</h1>
 <p class="subtitle">${currentFileName} · ${date}</p>
 ${document.getElementById('stats-grid').outerHTML}
+${clonedSections['golden-sweeps-section']}
 ${clonedSections['correlated-signals-section']}
 ${clonedSections['high-conviction-section']}
 ${cloneClustering.outerHTML}
 ${clonedSections['large-trades-section']}
-${clonedSections['flow-characteristics-section']}
 ${clonedSections['greeks-section']}
-${clonedSections['summary-section']}
 ${clonedSections['expiration-heatmap-section']}
-${clonedSections['golden-sweeps-section']}
 ${clonedSections['unusual-section']}
 <p class="generated">Generated by Options Flow Analyzer</p>
 </div></body></html>`;
