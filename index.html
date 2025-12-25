@@ -135,6 +135,9 @@
             padding: 1rem;
             border-bottom: 1px solid var(--border-color);
             background: var(--bg-card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .left-sidebar-title {
@@ -149,7 +152,7 @@
         .left-sidebar-title svg {
             width: 18px;
             height: 18px;
-            color: var(--accent-info);
+            color: var(--accent-warning);
         }
 
         .left-sidebar-section {
@@ -229,6 +232,531 @@
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.8rem;
             color: var(--accent-info);
+        }
+
+        /* Tracked Flows */
+        .tracked-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .tracked-empty {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 2rem 1rem;
+            line-height: 1.5;
+        }
+
+        .tracked-flow-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .tracked-flow-item:hover {
+            border-color: var(--border-highlight);
+        }
+
+        .tracked-flow-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .tracked-flow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .tracked-flow-ticker {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tracked-flow-symbol {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .tracked-flow-symbol:hover {
+            color: var(--accent-info);
+        }
+
+        .tracked-flow-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            padding: 0.15rem 0.35rem;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+
+        .tracked-flow-badge.call { background: rgba(63, 185, 80, 0.15); color: var(--accent-bullish); }
+        .tracked-flow-badge.put { background: rgba(248, 81, 73, 0.15); color: var(--accent-bearish); }
+
+        .tracked-flow-remove {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tracked-flow-remove:hover {
+            color: var(--accent-bearish);
+            background: rgba(248, 81, 73, 0.1);
+        }
+
+        .tracked-flow-remove svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .tracked-flow-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.25rem 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+        }
+
+        .tracked-flow-detail {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tracked-flow-detail-label {
+            color: var(--text-muted);
+        }
+
+        .tracked-flow-detail-value {
+            color: var(--text-secondary);
+        }
+
+        .tracked-flow-premium {
+            color: var(--accent-info) !important;
+            font-weight: 600;
+        }
+
+        .tracked-flow-date {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .tracked-actions {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .tracked-clear-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .tracked-clear-btn:hover {
+            border-color: var(--accent-bearish);
+            color: var(--accent-bearish);
+        }
+
+        .tracked-clear-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Track button for flow items */
+        .track-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .track-btn:hover {
+            color: var(--accent-warning);
+            background: rgba(210, 153, 34, 0.1);
+        }
+
+        .track-btn.tracked {
+            color: var(--accent-warning);
+        }
+
+        .track-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Multi-Leg Strategy Styles */
+        .strategy-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .strategy-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .strategy-card-header {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .strategy-card-header:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .strategy-info {
+            flex: 1;
+        }
+
+        .strategy-top-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .strategy-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .strategy-name.bullish {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--accent-bullish);
+        }
+
+        .strategy-name.bearish {
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--accent-bearish);
+        }
+
+        .strategy-name.neutral {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--accent-info);
+        }
+
+        .strategy-name.income {
+            background: rgba(163, 113, 247, 0.15);
+            color: var(--accent-purple);
+        }
+
+        .strategy-outlook {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding: 0.2rem 0.5rem;
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+
+        .strategy-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+
+        .strategy-metrics {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .strategy-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .strategy-metric-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .strategy-metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .strategy-metric-value.credit {
+            color: var(--accent-bullish);
+        }
+
+        .strategy-metric-value.debit {
+            color: var(--accent-bearish);
+        }
+
+        .strategy-premium {
+            text-align: right;
+        }
+
+        .strategy-premium-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-info);
+        }
+
+        .strategy-premium-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .strategy-legs {
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-card);
+            padding: 0.75rem 1rem;
+            display: none;
+        }
+
+        .strategy-legs.open {
+            display: block;
+        }
+
+        .strategy-leg {
+            display: grid;
+            grid-template-columns: 60px 50px 70px 50px 80px 80px 80px;
+            gap: 0.5rem;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            align-items: center;
+        }
+
+        .strategy-leg:last-child {
+            border-bottom: none;
+        }
+
+        .strategy-leg-header {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .strategy-education {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(88, 166, 255, 0.05);
+            border: 1px solid rgba(88, 166, 255, 0.2);
+            border-radius: 8px;
+        }
+
+        .strategy-education-title {
+            font-size: 0.7rem;
+            color: var(--accent-info);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .strategy-education-title svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .strategy-education-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .strategy-education-text strong {
+            color: var(--text-primary);
+        }
+
+        .strategy-profit-scenarios {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .profit-scenario {
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .profit-scenario-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .profit-scenario-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .profit-scenario-value.profit {
+            color: var(--accent-bullish);
+        }
+
+        .profit-scenario-value.loss {
+            color: var(--accent-bearish);
+        }
+
+        .profit-scenario-value.neutral {
+            color: var(--text-secondary);
+        }
+
+        /* Trade Idea Suggestion */
+        .trade-idea {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(63, 185, 80, 0.05);
+            border: 1px solid rgba(63, 185, 80, 0.2);
+            border-radius: 8px;
+        }
+
+        .trade-idea.bearish {
+            background: rgba(248, 81, 73, 0.05);
+            border-color: rgba(248, 81, 73, 0.2);
+        }
+
+        .trade-idea-title {
+            font-size: 0.7rem;
+            color: var(--accent-bullish);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .trade-idea.bearish .trade-idea-title {
+            color: var(--accent-bearish);
+        }
+
+        .trade-idea-title svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .trade-idea-spread {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .trade-idea-leg {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.6rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+        }
+
+        .trade-idea-leg .action {
+            font-weight: 600;
+        }
+
+        .trade-idea-leg .action.buy {
+            color: var(--accent-bullish);
+        }
+
+        .trade-idea-leg .action.sell {
+            color: var(--accent-bearish);
+        }
+
+        .trade-idea-arrow {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .trade-idea-details {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .trade-idea-detail {
+            font-size: 0.75rem;
+        }
+
+        .trade-idea-detail-label {
+            color: var(--text-muted);
+            margin-right: 0.35rem;
+        }
+
+        .trade-idea-detail-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+        }
+
+        .trade-idea-disclaimer {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
         }
 
         /* Right Chart Sidebar */
@@ -353,12 +881,6 @@
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--text-primary);
-        }
-
-        .sidebar-ticker-price {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
         }
 
         .sidebar-search {
@@ -659,6 +1181,14 @@
         .export-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3); }
         .export-btn.visible { display: inline-flex; align-items: center; gap: 0.5rem; }
         .export-btn svg { width: 16px; height: 16px; }
+        
+        /* Streaming button states */
+        #stream-prices-btn { transition: all 0.3s ease; }
+        #stream-prices-btn.connected { 
+            background: linear-gradient(135deg, var(--accent-bullish-dim), var(--accent-bullish)); 
+            border-color: var(--accent-bullish);
+        }
+        #stream-prices-btn:disabled { opacity: 0.7; cursor: wait; }
 
         /* Filters */
         .filters {
@@ -1268,68 +1798,26 @@
                 <div class="left-sidebar-header">
                     <div class="left-sidebar-title">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 3v18h18M9 17V9m4 8V5m4 12v-4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
-                        Dashboard
+                        Tracked Flows
+                    </div>
+                    <span class="tracked-count" id="tracked-count">0/10</span>
+                </div>
+                
+                <div class="left-sidebar-section">
+                    <div id="tracked-flows-list">
+                        <p class="tracked-empty" id="tracked-empty">Click the bookmark icon on any flow to track it here</p>
                     </div>
                 </div>
                 
-                <!-- Quick Stats -->
-                <div class="left-sidebar-section">
-                    <div class="left-sidebar-section-title">Quick Stats</div>
-                    <div id="left-stats">
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">Total Premium</span>
-                            <span class="mini-stat-value neutral" id="left-total-premium">-</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">Bullish Flow</span>
-                            <span class="mini-stat-value bullish" id="left-bullish-flow">-</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">Bearish Flow</span>
-                            <span class="mini-stat-value bearish" id="left-bearish-flow">-</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">Net Sentiment</span>
-                            <span class="mini-stat-value" id="left-net-sentiment">-</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">Sweeps</span>
-                            <span class="mini-stat-value neutral" id="left-sweeps">-</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">Aggression %</span>
-                            <span class="mini-stat-value neutral" id="left-aggression">-</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Flow Summary -->
-                <div class="left-sidebar-section">
-                    <div class="left-sidebar-section-title">Flow Characteristics</div>
-                    <div id="left-flow-chars">
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">ITM</span>
-                            <span class="mini-stat-value" id="left-itm">-</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">ATM</span>
-                            <span class="mini-stat-value" id="left-atm">-</span>
-                        </div>
-                        <div class="mini-stat">
-                            <span class="mini-stat-label">OTM</span>
-                            <span class="mini-stat-value" id="left-otm">-</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Top Tickers -->
-                <div class="left-sidebar-section">
-                    <div class="left-sidebar-section-title">Top Tickers</div>
-                    <div id="left-top-tickers">
-                        <p style="color:var(--text-muted);font-size:0.8rem">Load flow data to see top tickers</p>
-                    </div>
+                <div class="tracked-actions" id="tracked-actions" style="display:none">
+                    <button class="tracked-clear-btn" id="clear-tracked-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Clear All
+                    </button>
                 </div>
             </div>
         </div>
@@ -1372,11 +1860,12 @@
         </div>
 
         <div class="export-buttons">
-            <button class="export-btn" id="fetch-prices-btn">
+            <button class="export-btn" id="stream-prices-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
                     <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <span id="fetch-prices-text">Fetch Live Prices</span>
+                <span id="stream-status-text">Connect Live Feed</span>
             </button>
             <button class="export-btn" id="export-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1421,11 +1910,12 @@
                         <label class="filter-label">Expiration</label>
                         <select class="filter-select" id="hist-filter-dte">
                             <option value="">All DTE</option>
+                            <option value="0">0DTE Only</option>
                             <option value="7">≤ 7 days (Weekly)</option>
-                            <option value="30">≤ 30 days</option>
-                            <option value="60">31-60 days</option>
-                            <option value="90">61-90 days</option>
-                            <option value="90+">90+ days (LEAPS)</option>
+                            <option value="30">≤ 30 days (Monthly)</option>
+                            <option value="90">≤ 90 days (Quarterly)</option>
+                            <option value="365">≤ 365 days (Long-dated)</option>
+                            <option value="365+">365+ days (LEAPS)</option>
                         </select>
                     </div>
                     <div class="filter-group" style="min-width:120px">
@@ -1566,6 +2056,21 @@
                 <div class="section-content" id="golden-sweeps"></div>
             </div>
 
+            <div class="section" id="multi-leg-section">
+                <div class="section-header" onclick="toggleSection('multi-leg-section')">
+                    <div class="section-icon" style="background: rgba(88, 166, 255, 0.15); color: var(--accent-info);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 6h16M4 12h16M4 18h7" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="17" cy="18" r="3"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Multi-Leg Strategies</span>
+                    <span class="section-badge" id="multi-leg-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="multi-leg-strategies"></div>
+            </div>
+
             <div class="section" id="correlated-signals-section" style="display:none">
                 <div class="section-header" onclick="toggleSection('correlated-signals-section')">
                     <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
@@ -1692,7 +2197,6 @@
                     </div>
                     <div class="sidebar-ticker">
                         <span class="sidebar-ticker-symbol" id="sidebar-ticker-symbol">SPY</span>
-                        <span class="sidebar-ticker-price" id="sidebar-ticker-price"></span>
                     </div>
                     <div class="timeframe-controls" id="timeframe-controls">
                         <button class="timeframe-btn" data-interval="1" data-range="1D">1D</button>
@@ -1735,6 +2239,11 @@
             }
         }
 
+        function toggleStrategyLegs(idx) {
+            const el = document.getElementById(`strategy-legs-${idx}`);
+            el.classList.toggle('open');
+        }
+
         // Chart Sidebar Functions
         let currentChartSymbol = 'SPY';
         let currentInterval = 'D';
@@ -1774,72 +2283,276 @@
             mainContent.classList.toggle('left-open');
         }
         
-        // Update left sidebar stats
-        function updateLeftSidebar(flows) {
-            const total = flows.reduce((s, f) => s + f.Premium, 0);
-            const calls = flows.filter(f => f.CallPut === 'CALL');
-            const puts = flows.filter(f => f.CallPut === 'PUT');
-            const bullish = calls.filter(f => ['A','AA'].includes(f.Side)).reduce((s,f) => s + f.Premium, 0)
-                + puts.filter(f => ['B','BB'].includes(f.Side)).reduce((s,f) => s + f.Premium, 0);
-            const bearish = puts.filter(f => ['A','AA'].includes(f.Side)).reduce((s,f) => s + f.Premium, 0)
-                + calls.filter(f => ['B','BB'].includes(f.Side)).reduce((s,f) => s + f.Premium, 0);
-            const sweeps = flows.filter(f => f.Type === 'SWEEP').length;
-            const aggressiveCount = flows.filter(f => ['AA','BB'].includes(f.Side)).length;
-            const aggressionPct = flows.length > 0 ? Math.round((aggressiveCount / flows.length) * 100) : 0;
-            const net = bullish - bearish;
-            
-            document.getElementById('left-total-premium').textContent = fmt(total);
-            document.getElementById('left-bullish-flow').textContent = fmt(bullish);
-            document.getElementById('left-bearish-flow').textContent = fmt(bearish);
-            
-            const netEl = document.getElementById('left-net-sentiment');
-            netEl.textContent = (net >= 0 ? '+' : '') + fmt(net);
-            netEl.className = 'mini-stat-value ' + (net > 0 ? 'bullish' : net < 0 ? 'bearish' : 'neutral');
-            
-            document.getElementById('left-sweeps').textContent = sweeps.toLocaleString();
-            document.getElementById('left-aggression').textContent = aggressionPct + '%';
-            
-            // Moneyness
-            const moneyness = { itm: 0, atm: 0, otm: 0 };
-            flows.forEach(f => {
-                const diff = (f.Strike - f.Spot) / f.Spot;
-                const isCall = f.CallPut === 'CALL';
-                if (Math.abs(diff) <= 0.02) {
-                    moneyness.atm += f.Premium;
-                } else if ((isCall && diff < 0) || (!isCall && diff > 0)) {
-                    moneyness.itm += f.Premium;
-                } else {
-                    moneyness.otm += f.Premium;
+        // ==================== TRACKED FLOWS ====================
+        // Store tracked flows in localStorage (max 10)
+        const MAX_TRACKED = 10;
+        let trackedFlows = [];
+        
+        // Load tracked flows from localStorage
+        function loadTrackedFlows() {
+            try {
+                const saved = localStorage.getItem('trackedFlows');
+                if (saved) {
+                    trackedFlows = JSON.parse(saved);
+                    renderTrackedFlows();
                 }
-            });
+            } catch (e) {
+                console.error('Error loading tracked flows:', e);
+                trackedFlows = [];
+            }
+        }
+        
+        // Save tracked flows to localStorage
+        function saveTrackedFlows() {
+            try {
+                localStorage.setItem('trackedFlows', JSON.stringify(trackedFlows));
+            } catch (e) {
+                console.error('Error saving tracked flows:', e);
+            }
+        }
+        
+        // Generate unique ID for a flow
+        function getFlowId(flow) {
+            return `${flow.Symbol}-${flow.Strike}-${flow.ExpirationDate}-${flow.CallPut}-${flow.Premium}`;
+        }
+        
+        // Check if flow is already tracked
+        function isFlowTracked(flow) {
+            const id = getFlowId(flow);
+            return trackedFlows.some(t => t.id === id);
+        }
+        
+        // Add flow to tracked list
+        function trackFlow(flow, isCluster = false) {
+            if (trackedFlows.length >= MAX_TRACKED) {
+                alert(`Maximum ${MAX_TRACKED} tracked flows. Remove one first.`);
+                return false;
+            }
             
-            document.getElementById('left-itm').textContent = fmt(moneyness.itm);
-            document.getElementById('left-atm').textContent = fmt(moneyness.atm);
-            document.getElementById('left-otm').textContent = fmt(moneyness.otm);
+            const id = getFlowId(flow);
+            if (trackedFlows.some(t => t.id === id)) {
+                return false; // Already tracked
+            }
             
-            // Top Tickers
-            const summ = {};
-            flows.forEach(f => {
-                if (!summ[f.Symbol]) summ[f.Symbol] = { sym: f.Symbol, prem: 0, bullish: 0, bearish: 0 };
-                summ[f.Symbol].prem += f.Premium;
-                const isBullish = (f.CallPut === 'CALL' && ['A','AA'].includes(f.Side)) || (f.CallPut === 'PUT' && ['B','BB'].includes(f.Side));
-                const isBearish = (f.CallPut === 'PUT' && ['A','AA'].includes(f.Side)) || (f.CallPut === 'CALL' && ['B','BB'].includes(f.Side));
-                if (isBullish) summ[f.Symbol].bullish += f.Premium;
-                if (isBearish) summ[f.Symbol].bearish += f.Premium;
-            });
-            const top = Object.values(summ).sort((a,b) => b.prem - a.prem).slice(0, 8);
+            const trackedItem = {
+                id: id,
+                symbol: flow.Symbol,
+                strike: flow.Strike,
+                exp: flow.ExpirationDate,
+                callPut: flow.CallPut,
+                premium: flow.Premium,
+                volume: flow.Volume,
+                price: flow.Price,
+                spot: flow.Spot,
+                dte: flow.Dte,
+                side: flow.Side,
+                type: flow.Type,
+                color: flow.Color,
+                isCluster: isCluster,
+                trackedAt: new Date().toISOString(),
+                date: flow.CreatedDate || new Date().toISOString().split('T')[0],
+                time: flow.CreatedTime || ''
+            };
             
-            document.getElementById('left-top-tickers').innerHTML = top.map(t => {
-                const net = t.bullish - t.bearish;
-                const netColor = net > 0 ? 'var(--accent-bullish)' : net < 0 ? 'var(--accent-bearish)' : 'var(--text-muted)';
-                const arrow = net > 0 ? '▲' : net < 0 ? '▼' : '';
-                return `<div class="mini-ticker-row">
-                    <span class="mini-ticker-symbol ticker-clickable">${t.sym}</span>
-                    <span class="mini-ticker-net" style="color:${netColor}">${arrow}${fmt(Math.abs(net))}</span>
-                    <span class="mini-ticker-premium">${fmt(t.prem)}</span>
+            trackedFlows.unshift(trackedItem); // Add to front
+            saveTrackedFlows();
+            renderTrackedFlows();
+            return true;
+        }
+        
+        // Remove flow from tracked list
+        function untrackFlow(id) {
+            trackedFlows = trackedFlows.filter(t => t.id !== id);
+            saveTrackedFlows();
+            renderTrackedFlows();
+        }
+        
+        // Clear all tracked flows
+        function clearTrackedFlows() {
+            if (confirm('Clear all tracked flows?')) {
+                trackedFlows = [];
+                saveTrackedFlows();
+                renderTrackedFlows();
+            }
+        }
+        
+        // Render tracked flows in sidebar
+        function renderTrackedFlows() {
+            const list = document.getElementById('tracked-flows-list');
+            const countEl = document.getElementById('tracked-count');
+            const emptyEl = document.getElementById('tracked-empty');
+            const actionsEl = document.getElementById('tracked-actions');
+            
+            countEl.textContent = `${trackedFlows.length}/${MAX_TRACKED}`;
+            
+            if (trackedFlows.length === 0) {
+                list.innerHTML = '<p class="tracked-empty">Click the bookmark icon on any flow to track it here</p>';
+                actionsEl.style.display = 'none';
+                return;
+            }
+            
+            actionsEl.style.display = 'block';
+            
+            list.innerHTML = trackedFlows.map(t => {
+                const dir = t.callPut === 'CALL' ? 'call' : 'put';
+                const sideLabel = t.side === 'AA' ? 'ABV ASK' : t.side === 'A' ? 'ASK' : t.side === 'BB' ? 'BLW BID' : t.side === 'B' ? 'BID' : t.side;
+                const actionLabel = (t.side === 'AA' || t.side === 'A') ? 'BTO' : 'STO';
+                const actionColor = actionLabel === 'BTO' ? 'var(--accent-bullish)' : 'var(--accent-purple)';
+                // Only show BTO/STO for individual trades, not cluster-based tracks
+                const actionHtml = t.isCluster ? '' : `<span style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:${actionColor}">${actionLabel}</span>`;
+                
+                return `<div class="tracked-flow-item" data-id="${t.id}">
+                    <div class="tracked-flow-header">
+                        <div class="tracked-flow-ticker">
+                            <span class="tracked-flow-symbol ticker-clickable">${t.symbol}</span>
+                            <span class="tracked-flow-badge ${dir}">${t.callPut}</span>
+                            ${actionHtml}
+                        </div>
+                        <button class="tracked-flow-remove" onclick="untrackFlow('${t.id}')" title="Remove">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="tracked-flow-details">
+                        <div class="tracked-flow-detail">
+                            <span class="tracked-flow-detail-label">Strike</span>
+                            <span class="tracked-flow-detail-value">$${t.strike}</span>
+                        </div>
+                        <div class="tracked-flow-detail">
+                            <span class="tracked-flow-detail-label">Premium</span>
+                            <span class="tracked-flow-detail-value tracked-flow-premium">${fmt(t.premium)}</span>
+                        </div>
+                        <div class="tracked-flow-detail">
+                            <span class="tracked-flow-detail-label">Exp</span>
+                            <span class="tracked-flow-detail-value">${t.exp}</span>
+                        </div>
+                        <div class="tracked-flow-detail">
+                            <span class="tracked-flow-detail-label">DTE</span>
+                            <span class="tracked-flow-detail-value">${t.dte}d</span>
+                        </div>
+                        <div class="tracked-flow-detail">
+                            <span class="tracked-flow-detail-label">Spot</span>
+                            <span class="tracked-flow-detail-value">$${t.spot?.toFixed(2) || '-'}</span>
+                        </div>
+                        <div class="tracked-flow-detail">
+                            <span class="tracked-flow-detail-label">Vol</span>
+                            <span class="tracked-flow-detail-value">${t.volume?.toLocaleString() || '-'}</span>
+                        </div>
+                    </div>
+                    <div class="tracked-flow-date">Added: ${new Date(t.trackedAt).toLocaleDateString()} · Flow: ${t.date} ${t.time || ''}</div>
                 </div>`;
             }).join('');
         }
+        
+        // Track flow from Golden Sweeps section
+        function trackGoldenFlow(idx) {
+            if (window.goldenFlows && window.goldenFlows[idx]) {
+                const flow = window.goldenFlows[idx];
+                if (trackFlow(flow)) {
+                    // Open left sidebar if not open
+                    const leftSidebar = document.getElementById('left-sidebar');
+                    if (!leftSidebar.classList.contains('open')) {
+                        toggleLeftSidebar();
+                    }
+                    // Re-render Golden Sweeps to update button state
+                    // This is handled by re-running analyze, but for immediate feedback:
+                    const btn = event.target.closest('.track-btn');
+                    if (btn) {
+                        btn.classList.add('tracked');
+                        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+                        btn.title = 'Already tracked';
+                    }
+                }
+            }
+        }
+        
+        // Track flow from Large Trades section
+        function trackLargeFlow(idx) {
+            if (window.largeFlows && window.largeFlows[idx]) {
+                const flow = window.largeFlows[idx];
+                if (trackFlow(flow)) {
+                    const leftSidebar = document.getElementById('left-sidebar');
+                    if (!leftSidebar.classList.contains('open')) {
+                        toggleLeftSidebar();
+                    }
+                    const btn = event.target.closest('.track-btn');
+                    if (btn) {
+                        btn.classList.add('tracked');
+                        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+                        btn.title = 'Already tracked';
+                    }
+                }
+            }
+        }
+        
+        // Track flow from Unusual Activity section
+        function trackUnusualFlow(idx) {
+            if (window.unusualFlows && window.unusualFlows[idx]) {
+                const flow = window.unusualFlows[idx];
+                if (trackFlow(flow)) {
+                    const leftSidebar = document.getElementById('left-sidebar');
+                    if (!leftSidebar.classList.contains('open')) {
+                        toggleLeftSidebar();
+                    }
+                    const btn = event.target.closest('.track-btn');
+                    if (btn) {
+                        btn.classList.add('tracked');
+                        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+                        btn.title = 'Already tracked';
+                    }
+                }
+            }
+        }
+        
+        // Track flow from High Conviction section
+        function trackHighConvFlow(idx) {
+            if (window.highConvFlows && window.highConvFlows[idx]) {
+                const cluster = window.highConvFlows[idx];
+                // Get the best trade (highest premium) from the cluster
+                const bestTrade = cluster.trades.reduce((best, t) => t.Premium > best.Premium ? t : best, cluster.trades[0]);
+                if (trackFlow(bestTrade, true)) { // true = isCluster
+                    const leftSidebar = document.getElementById('left-sidebar');
+                    if (!leftSidebar.classList.contains('open')) {
+                        toggleLeftSidebar();
+                    }
+                    const btn = event.target.closest('.track-btn');
+                    if (btn) {
+                        btn.classList.add('tracked');
+                        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+                        btn.title = 'Already tracked';
+                    }
+                }
+            }
+        }
+        
+        // Track flow from Trade Clustering section
+        function trackClusterFlow(idx) {
+            if (window.clusterFlows && window.clusterFlows[idx]) {
+                const cluster = window.clusterFlows[idx];
+                // Get the best trade (highest premium) from the cluster
+                const bestTrade = cluster.trades.reduce((best, t) => t.Premium > best.Premium ? t : best, cluster.trades[0]);
+                if (trackFlow(bestTrade, true)) { // true = isCluster
+                    const leftSidebar = document.getElementById('left-sidebar');
+                    if (!leftSidebar.classList.contains('open')) {
+                        toggleLeftSidebar();
+                    }
+                    const btn = event.target.closest('.track-btn');
+                    if (btn) {
+                        btn.classList.add('tracked');
+                        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+                        btn.title = 'Already tracked';
+                    }
+                }
+            }
+        }
+        
+        // Initialize tracked flows on page load
+        loadTrackedFlows();
+        
+        // Clear button event listener
+        document.getElementById('clear-tracked-btn').addEventListener('click', clearTrackedFlows);
+        // ==================== END TRACKED FLOWS ====================
         
         function loadChart(symbol, interval = currentInterval, range = currentRange) {
             currentChartSymbol = symbol;
@@ -1905,21 +2618,6 @@
                 });
             };
             document.head.appendChild(script);
-            
-            // Update price if we have it
-            if (livePrices[symbol]) {
-                updateSidebarPrice(symbol);
-            }
-        }
-        
-        function updateSidebarPrice(symbol) {
-            const priceEl = document.getElementById('sidebar-ticker-price');
-            const price = livePrices[symbol];
-            if (price) {
-                const changeColor = price.changePercent >= 0 ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
-                const changeSign = price.changePercent >= 0 ? '+' : '';
-                priceEl.innerHTML = `$${price.current.toFixed(2)} <span style="color:${changeColor}">${changeSign}${price.changePercent.toFixed(2)}%</span>`;
-            }
         }
         
         function handleTickerClick(symbol) {
@@ -2150,8 +2848,8 @@
         const fileName = document.getElementById('file-name');
         const fileSize = document.getElementById('file-size');
         const exportBtn = document.getElementById('export-btn');
-        const fetchPricesBtn = document.getElementById('fetch-prices-btn');
-        const fetchPricesText = document.getElementById('fetch-prices-text');
+        const streamPricesBtn = document.getElementById('stream-prices-btn');
+        const streamStatusText = document.getElementById('stream-status-text');
         const loading = document.getElementById('loading');
         const output = document.getElementById('analysis-output');
         const filtersEl = document.getElementById('filters');
@@ -2181,7 +2879,12 @@
         let allFlows = []; // Store all flows for filtering
         let alertStreamData = { darkPool: {}, blocks: {}, insider: {}, earnings: {}, sector: {}, weekHigh: {}, weekLow: {}, orb: {}, priceSpike: {}, halted: {}, volumeAlert: {} }; // Store AlertStream data by ticker
         let livePrices = {}; // Store live prices by ticker
-        const FINNHUB_API_KEY = 'd53d9khr01qkplgudi8gd53d9khr01qkplgudi90';
+        let pricePollingInterval = null; // For REST API polling
+        let isPolling = false; // Polling state
+        
+        // Massive.com (formerly Polygon.io) API Configuration
+        // Get your free API key at https://massive.com
+        const MASSIVE_API_KEY = 'YOUR_MASSIVE_API_KEY'; // Replace with your API key
         
         // Supabase configuration
         const SUPABASE_URL = 'https://bwqpikngknfmihgmaody.supabase.co';
@@ -2370,11 +3073,12 @@
                 }
                 if (histFilterDte.value) {
                     const dte = histFilterDte.value;
-                    if (dte === '7') filtered = filtered.filter(f => f.Dte <= 7);
+                    if (dte === '0') filtered = filtered.filter(f => f.Dte === 0);
+                    else if (dte === '7') filtered = filtered.filter(f => f.Dte <= 7);
                     else if (dte === '30') filtered = filtered.filter(f => f.Dte <= 30);
-                    else if (dte === '60') filtered = filtered.filter(f => f.Dte > 30 && f.Dte <= 60);
-                    else if (dte === '90') filtered = filtered.filter(f => f.Dte > 60 && f.Dte <= 90);
-                    else if (dte === '90+') filtered = filtered.filter(f => f.Dte > 90);
+                    else if (dte === '90') filtered = filtered.filter(f => f.Dte <= 90);
+                    else if (dte === '365') filtered = filtered.filter(f => f.Dte <= 365);
+                    else if (dte === '365+') filtered = filtered.filter(f => f.Dte > 365);
                 }
                 
                 // Use filtered data for analysis
@@ -2400,7 +3104,7 @@
                 output.classList.add('visible');
                 filtersEl.classList.add('visible');
                 exportBtn.classList.add('visible');
-                fetchPricesBtn.classList.add('visible');
+                streamPricesBtn.classList.add('visible');
                 
                 loadHistoricalBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg> Load Historical Flow`;
                 loadHistoricalBtn.disabled = false;
@@ -3021,9 +3725,16 @@
             fileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
             fileInfo.classList.add('visible');
             exportBtn.classList.remove('visible');
-            fetchPricesBtn.classList.remove('visible');
+            streamPricesBtn.classList.remove('visible');
             livePrices = {}; // Reset live prices
-            fetchPricesText.textContent = 'Fetch Live Prices'; // Reset button text
+            
+            // Stop price polling if active
+            if (isPolling) {
+                stopPricePolling();
+            }
+            streamStatusText.textContent = 'Connect Live Feed';
+            streamPricesBtn.style.borderColor = '';
+            
             filtersEl.classList.remove('visible');
             loading.classList.add('visible');
             output.classList.remove('visible');
@@ -3041,6 +3752,7 @@
                             row.Spot = parseFloat(row.Spot) || 0;
                             row.Premium = parseInt(row.Premium) || 0;
                             row.Dte = parseInt(row.Dte) || 0;
+                            row.OI = parseInt(row.OI) || 0;
                         });
                         
                         // Filter out $0 spot tickers (noise/bad data)
@@ -3052,7 +3764,7 @@
                         loading.classList.remove('visible');
                         output.classList.add('visible');
                         exportBtn.classList.add('visible');
-                        fetchPricesBtn.classList.add('visible');
+                        streamPricesBtn.classList.add('visible');
                         filtersEl.classList.add('visible');
                     }, 400);
                 },
@@ -3083,9 +3795,6 @@
                 <div class="stat-card"><div class="stat-value">${aggressionPct}%</div><div class="stat-label">Aggression Ratio</div></div>
                 <div class="stat-card"><div class="stat-value">${flows.length}</div><div class="stat-label">Total Trades</div></div>
             `;
-            
-            // Update left sidebar stats
-            updateLeftSidebar(flows);
 
             // Correlated Signals (AlertStream cross-reference)
             const flowTickers = [...new Set(flows.map(f => f.Symbol))];
@@ -3346,9 +4055,9 @@
                 return { badge, current, changeFromFlow, isUp };
             }
 
-            // Clustering
+            // Clustering (exclude ML/ multi-leg trades - they have their own section)
             const clusters = {};
-            flows.forEach(f => {
+            flows.filter(f => f.Type !== 'ML/').forEach(f => {
                 const k = `${f.Symbol}|${f.Strike}|${f.ExpirationDate}|${f.CallPut}`;
                 if (!clusters[k]) clusters[k] = { symbol: f.Symbol, strike: f.Strike, exp: f.ExpirationDate, cp: f.CallPut, trades: [], vol: 0, prem: 0, latestDate: '', latestTime: '' };
                 clusters[k].trades.push(f);
@@ -3436,16 +4145,27 @@
             }
             highConv = highConv.slice(0, 10);
             document.getElementById('high-conviction-count').textContent = highConv.length;
+            
+            // Store high conviction clusters globally for tracking
+            window.highConvFlows = highConv;
 
-            const hcHtml = highConv.length ? highConv.map(c => {
+            const hcHtml = highConv.length ? highConv.map((c, idx) => {
                 const dir = c.cp === 'CALL' ? 'bullish' : 'bearish';
                 const level = c.score >= 9 ? 'high' : 'medium';
                 const avgSpot = c.trades.reduce((s,t) => s + t.Spot, 0) / c.trades.length;
                 const avgDte = Math.round(c.trades.reduce((s,t) => s + t.Dte, 0) / c.trades.length);
+                const totalOI = c.trades.reduce((s,t) => s + (t.OI || 0), 0);
+                const avgOI = Math.round(totalOI / c.trades.length);
                 const sw = c.trades.filter(t => t.Type === 'SWEEP').length;
                 const bl = c.trades.filter(t => t.Type === 'BLOCK').length;
                 const earningsBadge = getEarningsBadge(c.symbol);
                 const livePriceInfo = getLivePriceInfo(c.symbol, avgSpot, dir);
+                
+                // Get the best trade (highest premium) for tracking
+                const bestTrade = c.trades.reduce((best, t) => t.Premium > best.Premium ? t : best, c.trades[0]);
+                const isTracked = isFlowTracked(bestTrade);
+                const trackClass = isTracked ? 'tracked' : '';
+                const trackTitle = isTracked ? 'Already tracked' : 'Track best trade from this cluster';
                 
                 // Calculate aggregated Greeks for the cluster
                 let totalDeltaExp = 0, totalGammaExp = 0, totalThetaDecay = 0, totalVegaExp = 0;
@@ -3493,9 +4213,16 @@
                             ${earningsBadge}
                             ${livePriceInfo.badge}
                         </div>
-                        <div class="flow-premium">
-                            <div class="premium-value">${fmt(c.prem)}</div>
-                            <div class="premium-label">total premium</div>
+                        <div style="display:flex;align-items:center;gap:0.75rem">
+                            <div class="flow-premium">
+                                <div class="premium-value">${fmt(c.prem)}</div>
+                                <div class="premium-label">total premium</div>
+                            </div>
+                            <button class="track-btn ${trackClass}" onclick="trackHighConvFlow(${idx})" title="${trackTitle}">
+                                <svg viewBox="0 0 24 24" fill="${isTracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <div class="flow-details">
@@ -3503,6 +4230,7 @@
                         <div class="detail-item"><div class="detail-label">Exp</div><div class="detail-value">${c.exp}</div></div>
                         <div class="detail-item"><div class="detail-label">DTE</div><div class="detail-value">${avgDte} days</div></div>
                         <div class="detail-item"><div class="detail-label">Contracts</div><div class="detail-value">${num(c.vol)}</div></div>
+                        <div class="detail-item"><div class="detail-label">Open Int</div><div class="detail-value" style="color:var(--accent-purple)">${num(avgOI)}</div></div>
                         <div class="detail-item"><div class="detail-label">Trades</div><div class="detail-value">${c.trades.length} (${sw}S/${bl}B)</div></div>
                         <div class="detail-item"><div class="detail-label">Spot</div><div class="detail-value">$${avgSpot.toFixed(2)}</div></div>
                     </div>
@@ -3532,11 +4260,23 @@
             }
             displayClusters = displayClusters.slice(0, 10);
             document.getElementById('clustering-count').textContent = displayClusters.length;
+            
+            // Store clusters globally for tracking
+            window.clusterFlows = displayClusters;
+            
             const clHtml = displayClusters.map((c, i) => {
                 const dir = c.cp === 'CALL' ? 'bullish' : 'bearish';
                 const earningsBadge = getEarningsBadge(c.symbol);
                 const avgSpot = c.trades.reduce((s,t) => s + t.Spot, 0) / c.trades.length;
+                const avgOI = Math.round(c.trades.reduce((s,t) => s + (t.OI || 0), 0) / c.trades.length);
                 const livePriceInfo = getLivePriceInfo(c.symbol, avgSpot, dir);
+                
+                // Get the best trade (highest premium) for tracking
+                const bestTrade = c.trades.reduce((best, t) => t.Premium > best.Premium ? t : best, c.trades[0]);
+                const isTracked = isFlowTracked(bestTrade);
+                const trackClass = isTracked ? 'tracked' : '';
+                const trackTitle = isTracked ? 'Already tracked' : 'Track best trade from this cluster';
+                
                 const rows = c.trades.sort((a,b) => {
                     // Sort by date then time (newest first)
                     // First compare dates
@@ -3566,12 +4306,13 @@
                     const greeks = calculateGreeks(t);
                     const ivDisplay = greeks.valid ? `${(greeks.iv * 100).toFixed(0)}%` : '-';
                     const gammaDisplay = greeks.valid ? greeks.gamma.toFixed(3) : '-';
-                    return `<div style="display:grid;grid-template-columns:85px 90px 70px 65px 55px 75px 70px 70px 70px 40px 50px 55px;gap:0.25rem;padding:0.4rem 0.75rem;border-bottom:1px solid var(--border-color);font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap;">
+                    return `<div style="display:grid;grid-template-columns:85px 90px 70px 65px 55px 55px 75px 70px 70px 70px 40px 50px 55px;gap:0.25rem;padding:0.4rem 0.75rem;border-bottom:1px solid var(--border-color);font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap;">
                         <span style="color:var(--text-muted)">${t.CreatedDate||'-'}</span>
                         <span style="color:var(--text-muted)">${t.CreatedTime||'-'}</span>
                         <span style="color:var(--text-secondary)">${t.Type}</span>
                         <span style="color:${sideCol}">${t.Side==='A'?'ASK':t.Side==='AA'?'ABV ASK':t.Side==='B'?'BID':t.Side}</span>
-                        <span>${oiDot} ${t.Color==='YELLOW'?'YLW':t.Color==='MAGENTA'?'MAG':'WHT'}</span>
+                        <span>${oiDot}</span>
+                        <span style="color:var(--accent-purple)">${num(t.OI || 0)}</span>
                         <span style="color:var(--text-primary)">${num(t.Volume)}</span>
                         <span style="color:var(--text-secondary)">$${t.Price.toFixed(2)}</span>
                         <span style="color:var(--accent-info)">${fmt(t.Premium)}</span>
@@ -3593,15 +4334,21 @@
                             ${livePriceInfo.badge}
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-secondary)">$${c.strike} · ${c.exp}</span>
                         </div>
-                        <div style="display:flex;align-items:center;gap:1.5rem">
+                        <div style="display:flex;align-items:center;gap:1rem">
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-muted)">${c.trades.length} trades</span>
+                            <span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--accent-purple)">${num(avgOI)} OI</span>
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:var(--accent-info)">${fmt(c.prem)}</span>
+                            <button class="track-btn ${trackClass}" onclick="event.stopPropagation(); trackClusterFlow(${i})" title="${trackTitle}">
+                                <svg viewBox="0 0 24 24" fill="${isTracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <div id="cluster-${i}" class="cluster-trades-wrapper" style="display:none;border-top:1px solid var(--border-color);background:var(--bg-card)">
-                        <div style="min-width:940px">
-                            <div style="display:grid;grid-template-columns:85px 90px 70px 65px 55px 75px 70px 70px 70px 40px 50px 55px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border-color);white-space:nowrap">
-                                <span>Date</span><span>Time</span><span>Type</span><span>Side</span><span>OI</span><span>Volume</span><span>Price</span><span>Premium</span><span>Spot</span><span>DTE</span><span>IV</span><span>Gamma</span>
+                        <div style="min-width:995px">
+                            <div style="display:grid;grid-template-columns:85px 90px 70px 65px 55px 55px 75px 70px 70px 70px 40px 50px 55px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border-color);white-space:nowrap">
+                                <span>Date</span><span>Time</span><span>Type</span><span>Side</span><span>Flg</span><span>OI</span><span>Volume</span><span>Price</span><span>Premium</span><span>Spot</span><span>DTE</span><span>IV</span><span>Gamma</span>
                             </div>
                             ${rows}
                         </div>
@@ -3611,7 +4358,10 @@
             document.getElementById('clustering-analysis').innerHTML = (highConvictionOnly ? '<p style="color:var(--accent-info);font-size:0.85rem;margin-bottom:1rem">🎯 High Conviction: Showing only clusters with conviction score ≥ 6</p>' : '') + (clHtml || '<p style="color:var(--text-muted)">No significant clustering detected.</p>');
 
             // Large trades - $200K+ AND AA/BB (aggressive) AND OTM AND Yellow/Magenta (opening position)
+            // Exclude ML/ multi-leg trades - they have their own section
             let large = flows.filter(f => {
+                // Exclude multi-leg trades
+                if (f.Type === 'ML/') return false;
                 // Must be $200K+
                 if (f.Premium < 200000) return false;
                 // Must be AA or BB (most aggressive execution)
@@ -3638,13 +4388,22 @@
             
             large = large.slice(0, 10);
             document.getElementById('large-trades-count').textContent = large.length;
-            const ltHtml = large.map(t => {
+            
+            // Store large flows globally for tracking
+            window.largeFlows = large;
+            
+            const ltHtml = large.map((t, idx) => {
                 const dir = t.CallPut === 'CALL' ? (['A','AA'].includes(t.Side) ? 'bullish' : 'bearish') : (['A','AA'].includes(t.Side) ? 'bearish' : 'bullish');
                 const sideLabel = t.Side === 'AA' ? 'ABV ASK' : t.Side === 'A' ? 'ASK' : t.Side === 'BB' ? 'BLW BID' : t.Side === 'B' ? 'BID' : t.Side;
                 const sideColor = ['A','AA'].includes(t.Side) ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
                 const oiDot = ['YELLOW','MAGENTA'].includes(t.Color) ? `<span style="color:${t.Color==='YELLOW'?'var(--accent-warning)':'var(--accent-purple)'}">●</span>` : '<span style="color:var(--text-muted)">○</span>';
                 const earningsBadge = getEarningsBadge(t.Symbol);
                 const livePriceInfo = getLivePriceInfo(t.Symbol, t.Spot, dir);
+                
+                // Check if already tracked
+                const isTracked = isFlowTracked(t);
+                const trackClass = isTracked ? 'tracked' : '';
+                const trackTitle = isTracked ? 'Already tracked' : 'Track this flow';
                 
                 // Calculate Greeks for this trade
                 const greeks = calculateGreeks(t);
@@ -3667,8 +4426,14 @@
                             <span style="font-size:0.8rem">${oiDot}</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:1rem">
-                            <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-muted)">${num(t.Volume)} contracts</span>
+                            <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-muted)">${num(t.Volume)} vol</span>
+                            <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent-purple)">${num(t.OI || 0)} OI</span>
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:var(--accent-info)">${fmt(t.Premium)}</span>
+                            <button class="track-btn ${trackClass}" onclick="trackLargeFlow(${idx})" title="${trackTitle}">
+                                <svg viewBox="0 0 24 24" fill="${isTracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     ${greeks.valid ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap">
@@ -4012,20 +4777,84 @@
             const expList = Object.values(expMap).sort((a, b) => new Date(a.exp) - new Date(b.exp));
             const maxExpPrem = Math.max(...expList.map(e => e.prem), 1);
             
+            // Helper function to categorize DTE
+            function getDteCategory(daysOut) {
+                if (daysOut <= 0) return { label: '0DTE', color: 'var(--accent-bearish)', order: 0 };
+                if (daysOut <= 7) return { label: 'Weekly', color: 'var(--accent-warning)', order: 1 };
+                if (daysOut <= 30) return { label: 'Monthly', color: 'var(--accent-info)', order: 2 };
+                if (daysOut <= 90) return { label: 'Quarterly', color: 'var(--accent-purple)', order: 3 };
+                if (daysOut <= 365) return { label: 'Long-dated', color: 'var(--text-secondary)', order: 4 };
+                return { label: 'LEAPS', color: 'var(--accent-bullish)', order: 5 };
+            }
+            
+            // Group by category for summary
+            const categoryGroups = {
+                '0DTE': { prem: 0, bullish: 0, bearish: 0, trades: 0 },
+                'Weekly': { prem: 0, bullish: 0, bearish: 0, trades: 0 },
+                'Monthly': { prem: 0, bullish: 0, bearish: 0, trades: 0 },
+                'Quarterly': { prem: 0, bullish: 0, bearish: 0, trades: 0 },
+                'Long-dated': { prem: 0, bullish: 0, bearish: 0, trades: 0 },
+                'LEAPS': { prem: 0, bullish: 0, bearish: 0, trades: 0 }
+            };
+            
+            const today = new Date();
+            expList.forEach(e => {
+                const expDate = new Date(e.exp);
+                const daysOut = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                const cat = getDteCategory(daysOut).label;
+                categoryGroups[cat].prem += e.prem;
+                categoryGroups[cat].bullish += e.bullish;
+                categoryGroups[cat].bearish += e.bearish;
+                categoryGroups[cat].trades += e.trades;
+            });
+            
+            const totalCatPrem = Object.values(categoryGroups).reduce((s, c) => s + c.prem, 0) || 1;
+            const categoryOrder = ['0DTE', 'Weekly', 'Monthly', 'Quarterly', 'Long-dated', 'LEAPS'];
+            const categoryColors = {
+                '0DTE': 'var(--accent-bearish)',
+                'Weekly': 'var(--accent-warning)',
+                'Monthly': 'var(--accent-info)',
+                'Quarterly': 'var(--accent-purple)',
+                'Long-dated': 'var(--text-secondary)',
+                'LEAPS': 'var(--accent-bullish)'
+            };
+            
+            // Build grouped summary HTML
+            const groupedHtml = `
+                <div style="margin-bottom:1.5rem">
+                    <h4 style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;font-weight:500">Premium by Timeframe</h4>
+                    <div style="display:grid;grid-template-columns:repeat(6, 1fr);gap:0.5rem">
+                        ${categoryOrder.map(cat => {
+                            const g = categoryGroups[cat];
+                            const pct = (g.prem / totalCatPrem) * 100;
+                            const net = g.bullish - g.bearish;
+                            const netColor = net > 0 ? 'var(--accent-bullish)' : net < 0 ? 'var(--accent-bearish)' : 'var(--text-muted)';
+                            return `<div style="background:var(--bg-card);border-radius:8px;padding:0.6rem;text-align:center;border-top:3px solid ${categoryColors[cat]}">
+                                <div style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:${categoryColors[cat]};margin-bottom:0.25rem">${cat}</div>
+                                <div style="font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:600;color:var(--text-primary)">${fmt(g.prem)}</div>
+                                <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-muted)">${g.trades} trades</div>
+                                <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:${netColor}">${net > 0 ? '▲' : '▼'} ${fmt(Math.abs(net))}</div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            
+            // Build individual expiration rows
             const expHtml = expList.length ? `
-                <div style="display:flex;flex-direction:column;gap:0.5rem">
+                ${groupedHtml}
+                <h4 style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;font-weight:500">By Expiration Date</h4>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;max-height:300px;overflow-y:auto">
                     ${expList.map(e => {
                         const pct = (e.prem / maxExpPrem) * 100;
                         const net = e.bullish - e.bearish;
                         const barColor = net > 0 ? 'var(--accent-bullish)' : net < 0 ? 'var(--accent-bearish)' : 'var(--accent-info)';
-                        const today = new Date();
                         const expDate = new Date(e.exp);
                         const daysOut = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-                        const label = daysOut <= 0 ? '0DTE' : daysOut <= 7 ? 'This Week' : daysOut <= 14 ? 'Next Week' : daysOut <= 45 ? 'Monthly' : 'LEAPS';
-                        const labelColor = daysOut <= 2 ? 'var(--accent-bearish)' : daysOut <= 7 ? 'var(--accent-warning)' : 'var(--text-muted)';
-                        return `<div style="display:grid;grid-template-columns:100px 70px 1fr 100px 80px;gap:1rem;align-items:center;font-family:'JetBrains Mono',monospace;font-size:0.8rem">
+                        const { label, color } = getDteCategory(daysOut);
+                        return `<div style="display:grid;grid-template-columns:100px 80px 1fr 100px 80px;gap:1rem;align-items:center;font-family:'JetBrains Mono',monospace;font-size:0.8rem">
                             <span style="color:var(--text-primary)">${e.exp}</span>
-                            <span style="color:${labelColor};font-size:0.7rem">${label}</span>
+                            <span style="color:${color};font-size:0.7rem">${label}</span>
                             <div style="background:var(--bg-card);border-radius:4px;height:24px;overflow:hidden;position:relative">
                                 <div style="background:${barColor};height:100%;width:${pct}%;opacity:0.7;transition:width 0.3s ease"></div>
                                 <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:0.7rem;color:var(--text-secondary)">${e.trades} trades</span>
@@ -4036,6 +4865,555 @@
                     }).join('')}
                 </div>` : '<p style="color:var(--text-muted)">No expiration data available.</p>';
             document.getElementById('expiration-heatmap').innerHTML = expHtml;
+
+            // ==================== MULTI-LEG STRATEGY DETECTION ====================
+            // Group ML/ trades by symbol + timestamp (same second = same strategy)
+            const mlTrades = flows.filter(f => f.Type === 'ML/');
+            const mlGroups = {};
+            
+            mlTrades.forEach(t => {
+                const key = `${t.Symbol}|${t.CreatedDate}|${t.CreatedTime}`;
+                if (!mlGroups[key]) {
+                    mlGroups[key] = {
+                        symbol: t.Symbol,
+                        date: t.CreatedDate,
+                        time: t.CreatedTime,
+                        exp: t.ExpirationDate,
+                        spot: t.Spot,
+                        dte: t.Dte,
+                        legs: [],
+                        totalPremium: 0
+                    };
+                }
+                mlGroups[key].legs.push(t);
+                mlGroups[key].totalPremium += t.Premium;
+            });
+            
+            // Identify strategy type for each group
+            function identifyStrategy(group) {
+                const legs = group.legs;
+                if (legs.length < 2) return null;
+                
+                const calls = legs.filter(l => l.CallPut === 'CALL');
+                const puts = legs.filter(l => l.CallPut === 'PUT');
+                const buys = legs.filter(l => ['A', 'AA'].includes(l.Side));
+                const sells = legs.filter(l => ['B', 'BB'].includes(l.Side));
+                
+                // Get unique strikes and expirations
+                const strikes = [...new Set(legs.map(l => l.Strike))].sort((a, b) => a - b);
+                const exps = [...new Set(legs.map(l => l.ExpirationDate))];
+                
+                // Calculate net debit/credit
+                let netCost = 0;
+                legs.forEach(l => {
+                    const isBuy = ['A', 'AA'].includes(l.Side);
+                    netCost += isBuy ? (l.Price * l.Volume * 100) : -(l.Price * l.Volume * 100);
+                });
+                const isCredit = netCost < 0;
+                const netAmount = Math.abs(netCost);
+                
+                let strategy = {
+                    name: 'Complex Multi-Leg',
+                    type: 'complex',
+                    bias: 'neutral',
+                    isCredit: isCredit,
+                    netAmount: netAmount,
+                    description: '',
+                    education: '',
+                    maxProfit: null,
+                    maxLoss: null,
+                    breakeven: null
+                };
+                
+                // 2-leg strategies
+                if (legs.length === 2) {
+                    // STRADDLE: Same strike, same exp, 1 call + 1 put
+                    if (calls.length === 1 && puts.length === 1 && strikes.length === 1 && exps.length === 1) {
+                        const isBuying = buys.length === 2;
+                        strategy = {
+                            name: isBuying ? 'Long Straddle' : 'Short Straddle',
+                            type: 'volatility',
+                            bias: 'neutral',
+                            isCredit: !isBuying,
+                            netAmount: netAmount,
+                            description: `${strikes[0]} strike, ${group.exp}`,
+                            education: isBuying 
+                                ? `<strong>Long Straddle:</strong> You're betting the stock will make a BIG move in either direction. You profit if ${group.symbol} moves significantly above or below $${strikes[0]} by expiration. You lose if the stock stays near $${strikes[0]} (max loss = premium paid).`
+                                : `<strong>Short Straddle:</strong> You're betting the stock stays FLAT near $${strikes[0]}. You keep the premium if ${group.symbol} doesn't move much. Risk is unlimited if the stock makes a big move.`,
+                            maxProfit: isBuying ? 'Unlimited' : fmt(netAmount),
+                            maxLoss: isBuying ? fmt(netAmount) : 'Unlimited',
+                            breakeven: `$${(strikes[0] - netAmount/legs[0].Volume/100).toFixed(2)} / $${(strikes[0] + netAmount/legs[0].Volume/100).toFixed(2)}`
+                        };
+                    }
+                    // VERTICAL SPREAD: Same type (both calls or both puts), same exp, different strikes
+                    else if ((calls.length === 2 || puts.length === 2) && strikes.length === 2 && exps.length === 1) {
+                        const isCallSpread = calls.length === 2;
+                        const buyLeg = legs.find(l => ['A', 'AA'].includes(l.Side));
+                        const sellLeg = legs.find(l => ['B', 'BB'].includes(l.Side));
+                        
+                        if (buyLeg && sellLeg) {
+                            const buyStrike = buyLeg.Strike;
+                            const sellStrike = sellLeg.Strike;
+                            const spreadWidth = Math.abs(sellStrike - buyStrike) * 100 * buyLeg.Volume;
+                            
+                            if (isCallSpread) {
+                                const isBullCall = buyStrike < sellStrike;
+                                strategy = {
+                                    name: isBullCall ? 'Bull Call Spread' : 'Bear Call Spread',
+                                    type: 'directional',
+                                    bias: isBullCall ? 'bullish' : 'bearish',
+                                    isCredit: !isBullCall,
+                                    netAmount: netAmount,
+                                    description: `$${Math.min(buyStrike, sellStrike)}/$${Math.max(buyStrike, sellStrike)} calls`,
+                                    education: isBullCall
+                                        ? `<strong>Bull Call Spread:</strong> You're moderately bullish on ${group.symbol}. You buy a lower strike call and sell a higher strike call to reduce cost. <strong>Max profit</strong> if stock closes above $${sellStrike} at expiration. <strong>Max loss</strong> is limited to what you paid.`
+                                        : `<strong>Bear Call Spread:</strong> You're moderately bearish/neutral on ${group.symbol}. You sell a lower strike call and buy a higher strike call for protection. <strong>Max profit</strong> is the credit received if stock stays below $${buyStrike}. <strong>Max loss</strong> is the spread width minus credit.`,
+                                    maxProfit: isBullCall ? fmt(spreadWidth - netAmount) : fmt(netAmount),
+                                    maxLoss: isBullCall ? fmt(netAmount) : fmt(spreadWidth - netAmount),
+                                    breakeven: `$${(Math.min(buyStrike, sellStrike) + (isBullCall ? netAmount : -netAmount) / buyLeg.Volume / 100).toFixed(2)}`
+                                };
+                            } else {
+                                const isBullPut = sellStrike < buyStrike;
+                                strategy = {
+                                    name: isBullPut ? 'Bull Put Spread' : 'Bear Put Spread',
+                                    type: 'directional',
+                                    bias: isBullPut ? 'bullish' : 'bearish',
+                                    isCredit: isBullPut,
+                                    netAmount: netAmount,
+                                    description: `$${Math.min(buyStrike, sellStrike)}/$${Math.max(buyStrike, sellStrike)} puts`,
+                                    education: isBullPut
+                                        ? `<strong>Bull Put Spread:</strong> You're moderately bullish on ${group.symbol}. You sell a higher strike put and buy a lower strike put for protection. <strong>Max profit</strong> is the credit received if stock stays above $${sellStrike}. <strong>Max loss</strong> is spread width minus credit.`
+                                        : `<strong>Bear Put Spread:</strong> You're moderately bearish on ${group.symbol}. You buy a higher strike put and sell a lower strike put to reduce cost. <strong>Max profit</strong> if stock closes below $${sellStrike}. <strong>Max loss</strong> is limited to what you paid.`,
+                                    maxProfit: isBullPut ? fmt(netAmount) : fmt(spreadWidth - netAmount),
+                                    maxLoss: isBullPut ? fmt(spreadWidth - netAmount) : fmt(netAmount),
+                                    breakeven: `$${(Math.max(buyStrike, sellStrike) - (isBullPut ? netAmount : -netAmount) / buyLeg.Volume / 100).toFixed(2)}`
+                                };
+                            }
+                        }
+                    }
+                    // STRANGLE: Different strikes, same exp, 1 call + 1 put, both OTM
+                    else if (calls.length === 1 && puts.length === 1 && strikes.length === 2 && exps.length === 1) {
+                        const isBuying = buys.length === 2;
+                        const callStrike = calls[0].Strike;
+                        const putStrike = puts[0].Strike;
+                        strategy = {
+                            name: isBuying ? 'Long Strangle' : 'Short Strangle',
+                            type: 'volatility',
+                            bias: 'neutral',
+                            isCredit: !isBuying,
+                            netAmount: netAmount,
+                            description: `$${putStrike} put / $${callStrike} call`,
+                            education: isBuying
+                                ? `<strong>Long Strangle:</strong> Like a straddle but cheaper. You need ${group.symbol} to make a BIGGER move to profit. Stock must go above $${callStrike} or below $${putStrike} plus your cost to profit.`
+                                : `<strong>Short Strangle:</strong> You profit if ${group.symbol} stays between $${putStrike} and $${callStrike}. Wider profit zone than a straddle, but still unlimited risk on big moves.`,
+                            maxProfit: isBuying ? 'Unlimited' : fmt(netAmount),
+                            maxLoss: isBuying ? fmt(netAmount) : 'Unlimited',
+                            breakeven: `$${putStrike} / $${callStrike} ± premium`
+                        };
+                    }
+                    // CALENDAR SPREAD: Same strike, different expirations
+                    else if (strikes.length === 1 && exps.length === 2) {
+                        strategy = {
+                            name: 'Calendar Spread',
+                            type: 'time',
+                            bias: 'neutral',
+                            isCredit: isCredit,
+                            netAmount: netAmount,
+                            description: `$${strikes[0]} strike across expirations`,
+                            education: `<strong>Calendar Spread:</strong> You're trading time decay differences. The short-term option loses value faster than the long-term option. Profits if ${group.symbol} stays near $${strikes[0]} as the near-term option expires worthless.`,
+                            maxProfit: 'Variable (at near-term exp)',
+                            maxLoss: fmt(netAmount),
+                            breakeven: 'Near strike at front expiration'
+                        };
+                    }
+                }
+                // 4-leg strategies
+                else if (legs.length === 4) {
+                    // IRON CONDOR: 2 calls + 2 puts, all same exp, 4 different strikes
+                    if (calls.length === 2 && puts.length === 2 && exps.length === 1 && strikes.length === 4) {
+                        const callStrikes = calls.map(c => c.Strike).sort((a, b) => a - b);
+                        const putStrikes = puts.map(p => p.Strike).sort((a, b) => a - b);
+                        
+                        strategy = {
+                            name: 'Iron Condor',
+                            type: 'income',
+                            bias: 'neutral',
+                            isCredit: isCredit,
+                            netAmount: netAmount,
+                            description: `${putStrikes[0]}/${putStrikes[1]} puts, ${callStrikes[0]}/${callStrikes[1]} calls`,
+                            education: `<strong>Iron Condor:</strong> A popular income strategy betting ${group.symbol} stays in a range. You sell an OTM put spread and an OTM call spread. <strong>Max profit</strong> is the credit received if stock stays between $${putStrikes[1]} and $${callStrikes[0]} at expiration. <strong>Max loss</strong> is limited to the spread width minus credit.`,
+                            maxProfit: fmt(netAmount),
+                            maxLoss: fmt((Math.max(callStrikes[1] - callStrikes[0], putStrikes[1] - putStrikes[0]) * 100 * legs[0].Volume) - netAmount),
+                            breakeven: `$${putStrikes[1]} / $${callStrikes[0]} ± credit`
+                        };
+                    }
+                    // IRON BUTTERFLY: 2 calls + 2 puts, middle strikes are same (ATM)
+                    else if (calls.length === 2 && puts.length === 2 && exps.length === 1) {
+                        const allStrikes = legs.map(l => l.Strike).sort((a, b) => a - b);
+                        // Check if middle 2 strikes are the same (butterfly pattern)
+                        if (allStrikes[1] === allStrikes[2]) {
+                            strategy = {
+                                name: 'Iron Butterfly',
+                                type: 'income',
+                                bias: 'neutral',
+                                isCredit: isCredit,
+                                netAmount: netAmount,
+                                description: `Wings at $${allStrikes[0]}/$${allStrikes[3]}, body at $${allStrikes[1]}`,
+                                education: `<strong>Iron Butterfly:</strong> Like an iron condor but with ATM short strikes. Higher credit but narrower profit zone. <strong>Max profit</strong> if ${group.symbol} closes exactly at $${allStrikes[1]}. Risk is limited to wing width minus credit.`,
+                                maxProfit: fmt(netAmount),
+                                maxLoss: fmt((allStrikes[1] - allStrikes[0]) * 100 * legs[0].Volume - netAmount),
+                                breakeven: `$${allStrikes[1]} ± credit/contract`
+                            };
+                        }
+                    }
+                }
+                // 3-leg strategies (Butterflies, Ratio spreads)
+                else if (legs.length === 3) {
+                    // Could be a butterfly or ratio spread
+                    if ((calls.length === 3 || puts.length === 3) && strikes.length === 3) {
+                        strategy = {
+                            name: 'Butterfly Spread',
+                            type: 'neutral',
+                            bias: 'neutral',
+                            isCredit: isCredit,
+                            netAmount: netAmount,
+                            description: `$${strikes[0]}/$${strikes[1]}/$${strikes[2]}`,
+                            education: `<strong>Butterfly Spread:</strong> A limited risk strategy betting ${group.symbol} closes near the middle strike ($${strikes[1]}) at expiration. Max profit at middle strike, limited loss outside the wings.`,
+                            maxProfit: 'At middle strike',
+                            maxLoss: fmt(netAmount),
+                            breakeven: `Between $${strikes[0]} and $${strikes[2]}`
+                        };
+                    }
+                }
+                
+                // Complex multi-leg (5+ legs or unrecognized pattern)
+                if (strategy.name === 'Complex Multi-Leg') {
+                    // Generate smarter plain English explanation
+                    const buyContracts = buys.reduce((sum, l) => sum + l.Volume, 0);
+                    const sellContracts = sells.reduce((sum, l) => sum + l.Volume, 0);
+                    const callCount = calls.length;
+                    const putCount = puts.length;
+                    
+                    let typeDesc = '';
+                    if (callCount === 0) typeDesc = 'all PUTS';
+                    else if (putCount === 0) typeDesc = 'all CALLS';
+                    else typeDesc = `${callCount} calls and ${putCount} puts`;
+                    
+                    let actionDesc = '';
+                    if (sellContracts > buyContracts * 1.1) {
+                        actionDesc = `They're selling more contracts (${num(sellContracts)}) than buying (${num(buyContracts)}), collecting premium.`;
+                    } else if (buyContracts > sellContracts * 1.1) {
+                        actionDesc = `They're buying more contracts (${num(buyContracts)}) than selling (${num(sellContracts)}), paying for directional exposure.`;
+                    } else {
+                        actionDesc = `Roughly equal buys and sells, suggesting a hedged or spread position.`;
+                    }
+                    
+                    let biasDesc = '';
+                    if (putCount > 0 && callCount === 0) {
+                        if (sellContracts > buyContracts) {
+                            biasDesc = `Selling puts = bullish/neutral. They profit if ${group.symbol} stays above certain strikes or if volatility drops.`;
+                        } else {
+                            biasDesc = `Buying puts = bearish or hedging. They profit if ${group.symbol} falls, or they're protecting an existing long position.`;
+                        }
+                    } else if (callCount > 0 && putCount === 0) {
+                        if (sellContracts > buyContracts) {
+                            biasDesc = `Selling calls = bearish/neutral. They profit if ${group.symbol} stays below certain strikes or if volatility drops.`;
+                        } else {
+                            biasDesc = `Buying calls = bullish. They profit if ${group.symbol} rises.`;
+                        }
+                    } else {
+                        biasDesc = `Mixed calls and puts suggests a volatility play or complex hedge.`;
+                    }
+                    
+                    strategy.education = `<strong>What's happening:</strong> This ${legs.length}-leg trade uses ${typeDesc}. ${actionDesc}<br><br><strong>Likely intent:</strong> ${biasDesc} ${isCredit ? 'Net credit means they receive money upfront and profit if the position expires favorably.' : 'Net debit means they paid for this position, expecting a specific move.'}`;
+                    strategy.maxProfit = 'Varies';
+                    strategy.maxLoss = 'Varies';
+                }
+                
+                return strategy;
+            }
+            
+            // Generate a vertical spread trade idea based on the multi-leg's direction
+            function generateTradeIdea(group, strategy) {
+                const spot = group.spot || 0;
+                const legs = group.legs;
+                const strikes = [...new Set(legs.map(l => l.Strike))].sort((a, b) => a - b);
+                const exp = group.exp;
+                const dte = group.dte;
+                
+                // Skip if no spot price or neutral strategies with no clear direction
+                if (spot <= 0 && strikes.length === 0) return null;
+                
+                const refPrice = spot > 0 ? spot : strikes[Math.floor(strikes.length / 2)];
+                
+                // Determine spread width based on stock price
+                let spreadWidth;
+                if (refPrice < 50) spreadWidth = 2.5;
+                else if (refPrice < 100) spreadWidth = 5;
+                else if (refPrice < 250) spreadWidth = 10;
+                else if (refPrice < 500) spreadWidth = 25;
+                else spreadWidth = 50;
+                
+                // Round strikes to appropriate increments
+                const roundStrike = (price) => {
+                    if (refPrice < 50) return Math.round(price * 2) / 2; // 0.5 increments
+                    if (refPrice < 100) return Math.round(price);
+                    return Math.round(price / 5) * 5; // 5 increments
+                };
+                
+                let tradeIdea = null;
+                const bias = strategy.bias;
+                
+                // Analyze the multi-leg to infer direction if neutral
+                let inferredBias = bias;
+                if (bias === 'neutral') {
+                    const calls = legs.filter(l => l.CallPut === 'CALL');
+                    const puts = legs.filter(l => l.CallPut === 'PUT');
+                    const buyPremium = legs.filter(l => ['A', 'AA'].includes(l.Side)).reduce((s, l) => s + l.Premium, 0);
+                    const sellPremium = legs.filter(l => ['B', 'BB'].includes(l.Side)).reduce((s, l) => s + l.Premium, 0);
+                    
+                    // If mostly puts being sold = bullish
+                    if (puts.length > calls.length && sellPremium > buyPremium) inferredBias = 'bullish';
+                    // If mostly puts being bought = bearish
+                    else if (puts.length > calls.length && buyPremium > sellPremium) inferredBias = 'bearish';
+                    // If mostly calls being bought = bullish
+                    else if (calls.length > puts.length && buyPremium > sellPremium) inferredBias = 'bullish';
+                    // If mostly calls being sold = bearish
+                    else if (calls.length > puts.length && sellPremium > buyPremium) inferredBias = 'bearish';
+                }
+                
+                if (inferredBias === 'bullish') {
+                    // If original was credit, suggest credit spread (Bull Put). If debit, suggest debit spread (Bull Call)
+                    const useCallSpread = !strategy.isCredit;
+                    
+                    if (useCallSpread) {
+                        const buyStrike = roundStrike(refPrice);
+                        const sellStrike = roundStrike(refPrice + spreadWidth);
+                        tradeIdea = {
+                            name: 'Bull Call Spread',
+                            bias: 'bullish',
+                            type: 'CALL',
+                            leg1: { action: 'BUY', strike: buyStrike },
+                            leg2: { action: 'SELL', strike: sellStrike },
+                            exp: exp,
+                            dte: dte,
+                            maxProfit: `$${((sellStrike - buyStrike) * 100).toFixed(0)} - debit paid`,
+                            maxLoss: 'Debit paid',
+                            profitIf: `${group.symbol} closes above $${sellStrike} at expiration`,
+                            loseIf: `${group.symbol} closes below $${buyStrike} at expiration`
+                        };
+                    } else {
+                        const sellStrike = roundStrike(refPrice);
+                        const buyStrike = roundStrike(refPrice - spreadWidth);
+                        tradeIdea = {
+                            name: 'Bull Put Spread',
+                            bias: 'bullish',
+                            type: 'PUT',
+                            leg1: { action: 'SELL', strike: sellStrike },
+                            leg2: { action: 'BUY', strike: buyStrike },
+                            exp: exp,
+                            dte: dte,
+                            maxProfit: 'Credit received',
+                            maxLoss: `$${((sellStrike - buyStrike) * 100).toFixed(0)} - credit received`,
+                            profitIf: `${group.symbol} stays above $${sellStrike} at expiration`,
+                            loseIf: `${group.symbol} closes below $${buyStrike} at expiration`
+                        };
+                    }
+                } else if (inferredBias === 'bearish') {
+                    // If original was debit, suggest debit spread (Bear Put). If credit, suggest credit spread (Bear Call)
+                    const usePutSpread = !strategy.isCredit;
+                    
+                    if (usePutSpread) {
+                        const buyStrike = roundStrike(refPrice);
+                        const sellStrike = roundStrike(refPrice - spreadWidth);
+                        tradeIdea = {
+                            name: 'Bear Put Spread',
+                            bias: 'bearish',
+                            type: 'PUT',
+                            leg1: { action: 'BUY', strike: buyStrike },
+                            leg2: { action: 'SELL', strike: sellStrike },
+                            exp: exp,
+                            dte: dte,
+                            maxProfit: `$${((buyStrike - sellStrike) * 100).toFixed(0)} - debit paid`,
+                            maxLoss: 'Debit paid',
+                            profitIf: `${group.symbol} closes below $${sellStrike} at expiration`,
+                            loseIf: `${group.symbol} closes above $${buyStrike} at expiration`
+                        };
+                    } else {
+                        const sellStrike = roundStrike(refPrice);
+                        const buyStrike = roundStrike(refPrice + spreadWidth);
+                        tradeIdea = {
+                            name: 'Bear Call Spread',
+                            bias: 'bearish',
+                            type: 'CALL',
+                            leg1: { action: 'SELL', strike: sellStrike },
+                            leg2: { action: 'BUY', strike: buyStrike },
+                            exp: exp,
+                            dte: dte,
+                            maxProfit: 'Credit received',
+                            maxLoss: `$${((buyStrike - sellStrike) * 100).toFixed(0)} - credit received`,
+                            profitIf: `${group.symbol} stays below $${sellStrike} at expiration`,
+                            loseIf: `${group.symbol} closes above $${buyStrike} at expiration`
+                        };
+                    }
+                } else {
+                    // Neutral - suggest iron condor or skip
+                    return null;
+                }
+                
+                return tradeIdea;
+            }
+            
+            // Process all multi-leg groups
+            const strategies = Object.values(mlGroups)
+                .filter(g => g.legs.length >= 2)
+                .map(g => {
+                    const strategy = identifyStrategy(g);
+                    return {
+                        ...g,
+                        strategy: strategy,
+                        tradeIdea: strategy ? generateTradeIdea(g, strategy) : null
+                    };
+                })
+                .filter(g => g.strategy)
+                .sort((a, b) => b.totalPremium - a.totalPremium)
+                .slice(0, 15);
+            
+            document.getElementById('multi-leg-count').textContent = strategies.length;
+            
+            // Render multi-leg strategies
+            const mlHtml = strategies.length ? strategies.map((s, idx) => {
+                const st = s.strategy;
+                const biasClass = st.bias === 'bullish' ? 'bullish' : st.bias === 'bearish' ? 'bearish' : st.type === 'income' ? 'income' : 'neutral';
+                const outlookText = st.bias === 'bullish' ? '📈 Bullish' : st.bias === 'bearish' ? '📉 Bearish' : st.type === 'income' ? '💰 Income' : '↔️ Neutral';
+                
+                const legsHtml = s.legs.map(l => {
+                    const action = ['A', 'AA'].includes(l.Side) ? 'BUY' : 'SELL';
+                    const actionColor = action === 'BUY' ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                    return `<div class="strategy-leg">
+                        <span style="color:${actionColor};font-weight:600">${action}</span>
+                        <span>${l.CallPut}</span>
+                        <span>$${l.Strike}</span>
+                        <span>${l.Volume}</span>
+                        <span>$${l.Price.toFixed(2)}</span>
+                        <span style="color:var(--accent-info)">${fmt(l.Premium)}</span>
+                        <span style="color:var(--text-muted)">${l.ExpirationDate}</span>
+                    </div>`;
+                }).join('');
+                
+                return `
+                <div class="strategy-card" id="strategy-${idx}">
+                    <div class="strategy-card-header" onclick="toggleStrategyLegs(${idx})">
+                        <div class="strategy-info">
+                            <div class="strategy-top-row">
+                                <span class="ticker-symbol ticker-clickable" style="font-size:1.1rem">${s.symbol}</span>
+                                <span class="strategy-name ${biasClass}">${st.name}</span>
+                                <span class="strategy-outlook">${outlookText}</span>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">${s.time}</span>
+                            </div>
+                            <div class="strategy-description">${st.description}</div>
+                            <div class="strategy-metrics">
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">${st.isCredit ? 'Net Credit' : 'Net Debit'}</span>
+                                    <span class="strategy-metric-value ${st.isCredit ? 'credit' : 'debit'}">${st.isCredit ? '+' : '-'}${fmt(st.netAmount)}</span>
+                                </div>
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">Max Profit</span>
+                                    <span class="strategy-metric-value" style="color:var(--accent-bullish)">${st.maxProfit || 'N/A'}</span>
+                                </div>
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">Max Loss</span>
+                                    <span class="strategy-metric-value" style="color:var(--accent-bearish)">${st.maxLoss || 'N/A'}</span>
+                                </div>
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">Legs</span>
+                                    <span class="strategy-metric-value" style="color:var(--text-secondary)">${s.legs.length}</span>
+                                </div>
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">DTE</span>
+                                    <span class="strategy-metric-value" style="color:var(--text-secondary)">${s.dte}d</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="strategy-premium">
+                            <div class="strategy-premium-value">${fmt(s.totalPremium)}</div>
+                            <div class="strategy-premium-label">total premium</div>
+                        </div>
+                    </div>
+                    <div class="strategy-legs" id="strategy-legs-${idx}">
+                        <div class="strategy-leg strategy-leg-header">
+                            <span>Action</span>
+                            <span>Type</span>
+                            <span>Strike</span>
+                            <span>Qty</span>
+                            <span>Price</span>
+                            <span>Premium</span>
+                            <span>Exp</span>
+                        </div>
+                        ${legsHtml}
+                        <div class="strategy-education">
+                            <div class="strategy-education-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 16v-4M12 8h.01"/>
+                                </svg>
+                                What This Means
+                            </div>
+                            <div class="strategy-education-text">${st.education}</div>
+                            ${st.breakeven ? `<div style="margin-top:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">Breakeven: ${st.breakeven}</div>` : ''}
+                        </div>
+                        ${s.tradeIdea ? `
+                        <div class="trade-idea ${s.tradeIdea.bias}">
+                            <div class="trade-idea-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Trade Idea: ${s.tradeIdea.name}
+                            </div>
+                            <div class="trade-idea-spread">
+                                <div class="trade-idea-leg">
+                                    <span class="action ${s.tradeIdea.leg1.action.toLowerCase()}">${s.tradeIdea.leg1.action}</span>
+                                    <span>$${s.tradeIdea.leg1.strike} ${s.tradeIdea.type}</span>
+                                </div>
+                                <span class="trade-idea-arrow">+</span>
+                                <div class="trade-idea-leg">
+                                    <span class="action ${s.tradeIdea.leg2.action.toLowerCase()}">${s.tradeIdea.leg2.action}</span>
+                                    <span>$${s.tradeIdea.leg2.strike} ${s.tradeIdea.type}</span>
+                                </div>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">Exp: ${s.tradeIdea.exp}</span>
+                            </div>
+                            <div class="trade-idea-details">
+                                <div class="trade-idea-detail">
+                                    <span class="trade-idea-detail-label">Max Profit:</span>
+                                    <span class="trade-idea-detail-value" style="color:var(--accent-bullish)">${s.tradeIdea.maxProfit}</span>
+                                </div>
+                                <div class="trade-idea-detail">
+                                    <span class="trade-idea-detail-label">Max Loss:</span>
+                                    <span class="trade-idea-detail-value" style="color:var(--accent-bearish)">${s.tradeIdea.maxLoss}</span>
+                                </div>
+                            </div>
+                            <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem">
+                                <span style="color:var(--accent-bullish)">✓ Profit if:</span> ${s.tradeIdea.profitIf}
+                            </div>
+                            <div style="font-size:0.75rem;color:var(--text-secondary)">
+                                <span style="color:var(--accent-bearish)">✗ Lose if:</span> ${s.tradeIdea.loseIf}
+                            </div>
+                            <div class="trade-idea-disclaimer">
+                                ⚠️ This is not financial advice. Always do your own research and consider your risk tolerance before trading.
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>`;
+            }).join('') : '<p style="color:var(--text-muted)">No multi-leg strategies detected. Multi-leg trades appear as "ML/" in the Type column.</p>';
+            
+            document.getElementById('multi-leg-strategies').innerHTML = `
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">
+                    Multi-leg strategies combine multiple options contracts executed together. Click any strategy to see individual legs and learn what it means.
+                </p>
+                ${mlHtml}
+            `;
+            // ==================== END MULTI-LEG STRATEGY DETECTION ====================
 
             // Golden Sweeps - Bullish (AA Calls) and Bearish (AA Puts, BB Calls)
             // Show top trade per ticker/strike
@@ -4069,7 +5447,10 @@
             const golden = Object.values(goldenByStrike).sort((a,b) => b.Premium - a.Premium);
             document.getElementById('golden-sweeps-count').textContent = golden.length;
             
-            const gsRows = golden.map(t => {
+            // Store golden flows globally for tracking
+            window.goldenFlows = golden;
+            
+            const gsRows = golden.map((t, idx) => {
                 // Determine direction based on signal type
                 const isBullish = t.Side === 'AA' && t.CallPut === 'CALL';
                 const dir = isBullish ? 'bullish' : 'bearish';
@@ -4088,7 +5469,12 @@
                     ? (t.CallPut === 'CALL' ? 'Long Calls' : 'Long Puts')
                     : (t.CallPut === 'CALL' ? 'Short Calls' : 'Short Puts');
                 
-                return `<div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 70px 70px 70px 40px 50px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-left:3px solid ${isBullish ? 'var(--accent-bullish)' : 'var(--accent-bearish)'};border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
+                // Check if already tracked
+                const isTracked = isFlowTracked(t);
+                const trackClass = isTracked ? 'tracked' : '';
+                const trackTitle = isTracked ? 'Already tracked' : 'Track this flow';
+                
+                return `<div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 55px 70px 70px 70px 40px 50px 30px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-left:3px solid ${isBullish ? 'var(--accent-bullish)' : 'var(--accent-bearish)'};border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
                     <span class="ticker-clickable" style="font-weight:600;color:var(--text-primary)">${t.Symbol}</span>
                     <span style="color:var(--text-muted)">${t.CreatedTime||'-'}</span>
                     <span class="direction-badge ${dir}" style="font-size:0.6rem;padding:0.15rem 0.35rem">${t.CallPut}</span>
@@ -4097,26 +5483,34 @@
                     <span style="color:var(--text-secondary)">$${t.Strike}</span>
                     <span style="color:var(--text-secondary)">$${t.Spot.toFixed(2)}</span>
                     <span style="color:var(--text-primary)">${num(t.Volume)}</span>
+                    <span style="color:var(--accent-purple)">${num(t.OI || 0)}</span>
                     <span style="color:var(--text-secondary)">@$${t.Price.toFixed(2)}</span>
                     <span style="color:var(--accent-warning);font-weight:600">${fmt(t.Premium)}</span>
                     <span style="color:var(--text-muted)">${t.ExpirationDate}</span>
                     <span style="color:var(--text-muted)">${t.Dte}d</span>
                     <span style="color:var(--text-muted);font-size:0.65rem">${flowsAtStrike}@str</span>
+                    <button class="track-btn ${trackClass}" onclick="trackGoldenFlow(${idx})" title="${trackTitle}">
+                        <svg viewBox="0 0 24 24" fill="${isTracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
                 </div>`;
             }).join('');
             
             const gsHtml = golden.length ? `
-                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">Yellow sweeps with $100K+ premium (top trade per strike). <span style="color:var(--accent-bullish)">BTO = Buy to Open</span> · <span style="color:var(--accent-purple)">STO = Sell to Open (Writing)</span></p>
-                <div style="overflow-x:auto"><div style="min-width:950px">
-                    <div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 70px 70px 70px 40px 50px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
-                        <span>Symbol</span><span>Time</span><span>C/P</span><span>Side</span><span>Action</span><span>Strike</span><span>Spot</span><span>Volume</span><span>Price</span><span>Premium</span><span>Exp</span><span>DTE</span><span>Flows</span>
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">Yellow sweeps with $100K+ premium (top trade per strike). <span style="color:var(--accent-bullish)">BTO = Buy to Open</span> · <span style="color:var(--accent-purple)">STO = Sell to Open (Writing)</span> · Click <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:middle"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg> to track</p>
+                <div style="overflow-x:auto"><div style="min-width:1035px">
+                    <div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 55px 70px 70px 70px 40px 50px 30px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
+                        <span>Symbol</span><span>Time</span><span>C/P</span><span>Side</span><span>Action</span><span>Strike</span><span>Spot</span><span>Volume</span><span>OI</span><span>Price</span><span>Premium</span><span>Exp</span><span>DTE</span><span>Flows</span><span></span>
                     </div>
                     ${gsRows}
                 </div></div>` : '<p style="color:var(--text-muted)">No golden sweeps found (Yellow sweeps, AA/BB, $100K+ premium).</p>';
             document.getElementById('golden-sweeps').innerHTML = gsHtml;
 
             // Unusual - $100K+ AND (AA/BB OR Yellow/Magenta), limit 10
+            // Exclude ML/ multi-leg trades - they have their own section
             const unusual = flows.filter(f => {
+                if (f.Type === 'ML/') return false;
                 if (f.Uoa !== 'T') return false;
                 if (f.Premium < 100000) return false;
                 const isAggressive = ['AA', 'BB'].includes(f.Side);
@@ -4125,84 +5519,166 @@
             }).sort((a,b) => b.Premium - a.Premium).slice(0, 10);
             document.getElementById('unusual-count').textContent = unusual.length;
             
-            const uRows = unusual.map(t => {
+            // Store unusual flows globally for tracking
+            window.unusualFlows = unusual;
+            
+            const uRows = unusual.map((t, idx) => {
                 const dir = t.CallPut === 'CALL' ? (['A','AA'].includes(t.Side) ? 'bullish' : 'bearish') : (['A','AA'].includes(t.Side) ? 'bearish' : 'bullish');
                 const oiDot = ['YELLOW','MAGENTA'].includes(t.Color) ? `<span style="color:${t.Color==='YELLOW'?'var(--accent-warning)':'var(--accent-purple)'}">●</span>` : '<span style="color:var(--text-muted)">○</span>';
                 const sideCol = ['A','AA'].includes(t.Side) ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
-                return `<div style="display:grid;grid-template-columns:70px 85px 55px 70px 55px 55px 70px 70px 70px 70px 70px 40px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
+                
+                // Check if already tracked
+                const isTracked = isFlowTracked(t);
+                const trackClass = isTracked ? 'tracked' : '';
+                const trackTitle = isTracked ? 'Already tracked' : 'Track this flow';
+                
+                return `<div style="display:grid;grid-template-columns:70px 85px 55px 70px 55px 55px 55px 70px 70px 70px 70px 70px 40px 30px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
                     <span class="ticker-clickable" style="font-weight:600;color:var(--text-primary)">${t.Symbol}</span>
                     <span style="color:var(--text-muted)">${t.CreatedTime||'-'}</span>
                     <span style="color:var(--text-secondary)">${t.Type}</span>
                     <span class="direction-badge ${dir}" style="font-size:0.6rem;padding:0.15rem 0.35rem">${t.CallPut}</span>
                     <span style="color:${sideCol}">${t.Side==='A'?'ASK':t.Side==='AA'?'ABV ASK':t.Side}</span>
                     <span>${oiDot}</span>
+                    <span style="color:var(--accent-purple)">${num(t.OI || 0)}</span>
                     <span style="color:var(--text-secondary)">$${t.Strike}</span>
                     <span style="color:var(--text-primary)">${num(t.Volume)}</span>
                     <span style="color:var(--text-secondary)">@$${t.Price.toFixed(2)}</span>
                     <span style="color:var(--accent-info)">${fmt(t.Premium)}</span>
                     <span style="color:var(--text-muted)">${t.ExpirationDate}</span>
                     <span style="color:var(--text-muted)">${t.Dte}d</span>
+                    <button class="track-btn ${trackClass}" onclick="trackUnusualFlow(${idx})" title="${trackTitle}">
+                        <svg viewBox="0 0 24 24" fill="${isTracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
                 </div>`;
             }).join('');
             
             const uHtml = unusual.length ? `
-                <div style="overflow-x:auto"><div style="min-width:850px">
-                    <div style="display:grid;grid-template-columns:70px 85px 55px 70px 55px 55px 70px 70px 70px 70px 70px 40px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
-                        <span>Symbol</span><span>Time</span><span>Type</span><span>C/P</span><span>Side</span><span>OI</span><span>Strike</span><span>Volume</span><span>Price</span><span>Premium</span><span>Exp</span><span>DTE</span>
+                <div style="overflow-x:auto"><div style="min-width:935px">
+                    <div style="display:grid;grid-template-columns:70px 85px 55px 70px 55px 55px 55px 70px 70px 70px 70px 70px 40px 30px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
+                        <span>Symbol</span><span>Time</span><span>Type</span><span>C/P</span><span>Side</span><span>Flg</span><span>OI</span><span>Strike</span><span>Volume</span><span>Price</span><span>Premium</span><span>Exp</span><span>DTE</span><span></span>
                     </div>
                     ${uRows}
                 </div></div>` : '<p style="color:var(--text-muted)">No unusual activity matching criteria ($100K+ AND aggressive/OI exceeded).</p>';
             document.getElementById('unusual-activity').innerHTML = uHtml;
         }
 
-        // Fetch Live Prices from Finnhub
-        async function fetchLivePrices() {
+        // ==================== MASSIVE.COM REST API POLLING ====================
+        // Uses REST API snapshots (works on free tier) instead of WebSocket (paid only)
+        
+        async function startPricePolling() {
+            if (isPolling) {
+                stopPricePolling();
+                return;
+            }
+            
+            if (MASSIVE_API_KEY === 'YOUR_MASSIVE_API_KEY') {
+                streamStatusText.textContent = '⚠ Set API Key';
+                streamPricesBtn.style.borderColor = 'var(--accent-warning)';
+                alert('Please set your Massive.com API key in the code.\n\nGet a free key at: https://massive.com\n\nReplace YOUR_MASSIVE_API_KEY near line 2165 in the HTML.');
+                return;
+            }
+            
             const tickers = [...new Set(allFlows.map(f => f.Symbol))];
-            if (tickers.length === 0) return;
+            if (tickers.length === 0) {
+                alert('No flow data loaded. Upload a CSV or load historical data first.');
+                return;
+            }
             
-            fetchPricesText.textContent = 'Fetching...';
-            fetchPricesBtn.disabled = true;
+            isPolling = true;
+            streamPricesBtn.style.borderColor = 'var(--accent-bullish)';
+            streamStatusText.textContent = 'Loading...';
             
-            let fetched = 0;
-            const total = tickers.length;
+            // Initial fetch
+            await fetchPriceSnapshots(tickers);
             
-            for (const ticker of tickers) {
+            // Poll every 15 seconds (free tier is 5 calls/min, this uses ~4/min max)
+            pricePollingInterval = setInterval(() => fetchPriceSnapshots(tickers), 15000);
+            
+            streamStatusText.textContent = `● Live (${Object.keys(livePrices).length})`;
+        }
+        
+        function stopPricePolling() {
+            if (pricePollingInterval) {
+                clearInterval(pricePollingInterval);
+                pricePollingInterval = null;
+            }
+            isPolling = false;
+            streamStatusText.textContent = 'Connect Live Feed';
+            streamPricesBtn.style.borderColor = '';
+        }
+        
+        async function fetchPriceSnapshots(tickers) {
+            // Batch tickers (API supports multiple in one call)
+            const batchSize = 50; // Keep batches reasonable
+            let totalLoaded = 0;
+            
+            for (let i = 0; i < tickers.length; i += batchSize) {
+                const batch = tickers.slice(i, i + batchSize);
+                const tickerList = batch.join(',');
+                
                 try {
-                    const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`);
-                    const data = await response.json();
-                    if (data && data.c && data.c > 0) {
-                        livePrices[ticker] = {
-                            current: data.c,
-                            change: data.d,
-                            changePercent: data.dp,
-                            high: data.h,
-                            low: data.l,
-                            open: data.o,
-                            prevClose: data.pc,
-                            timestamp: Date.now()
-                        };
-                    }
-                    fetched++;
-                    fetchPricesText.textContent = `Fetching... ${fetched}/${total}`;
+                    const response = await fetch(
+                        `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${tickerList}&apiKey=${MASSIVE_API_KEY}`
+                    );
                     
-                    // Rate limit: 60 calls/min = 1 per second to be safe
-                    if (fetched < total) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
+                    if (!response.ok) {
+                        if (response.status === 403) {
+                            streamStatusText.textContent = '✗ Invalid API Key';
+                            stopPricePolling();
+                            return;
+                        }
+                        if (response.status === 429) {
+                            streamStatusText.textContent = '⚠ Rate Limited';
+                            // Continue polling, just skip this batch
+                            continue;
+                        }
+                        throw new Error(`HTTP ${response.status}`);
                     }
+                    
+                    const data = await response.json();
+                    
+                    if (data.tickers && data.tickers.length > 0) {
+                        data.tickers.forEach(t => {
+                            const price = t.day?.c || t.lastTrade?.p || t.prevDay?.c || 0;
+                            livePrices[t.ticker] = {
+                                current: price,
+                                open: t.day?.o || 0,
+                                high: t.day?.h || 0,
+                                low: t.day?.l || 0,
+                                volume: t.day?.v || 0,
+                                prevClose: t.prevDay?.c || 0,
+                                change: t.todaysChange || 0,
+                                changePercent: t.todaysChangePerc || 0,
+                                vwap: t.day?.vw || 0,
+                                timestamp: Date.now()
+                            };
+                        });
+                        totalLoaded += data.tickers.length;
+                    }
+                    
+                    // Small delay between batches to respect rate limits
+                    if (i + batchSize < tickers.length) {
+                        await new Promise(resolve => setTimeout(resolve, 250));
+                    }
+                    
                 } catch (err) {
-                    console.error(`Error fetching ${ticker}:`, err);
+                    console.error('Snapshot fetch error:', err);
+                    if (err.message.includes('Failed to fetch')) {
+                        streamStatusText.textContent = '✗ Network Error';
+                    }
                 }
             }
             
-            const priceCount = Object.keys(livePrices).length;
-            fetchPricesText.textContent = `✓ ${priceCount} Prices Loaded`;
-            fetchPricesBtn.disabled = false;
-            
-            // Re-run analysis to update displays with live prices
-            applyFilters();
+            if (totalLoaded > 0 && isPolling) {
+                streamStatusText.textContent = `● Live (${Object.keys(livePrices).length})`;
+                // Re-run analysis to update Greeks with live prices
+                applyFilters();
+            }
         }
         
-        // Fetch prices for trend tickers
+        // Fetch prices for trend tickers using Massive REST API
         async function fetchTrendPrices() {
             const btn = document.getElementById('fetch-trend-prices-btn');
             if (!btn || !window.trendSymbols || window.trendSymbols.length === 0) {
@@ -4210,53 +5686,57 @@
                 return;
             }
             
+            if (MASSIVE_API_KEY === 'YOUR_MASSIVE_API_KEY') {
+                alert('Please set your Massive.com API key to fetch live prices.');
+                return;
+            }
+            
             btn.disabled = true;
             btn.innerHTML = '<span>Fetching...</span>';
             
             const tickers = window.trendSymbols;
-            let fetched = 0;
+            const tickerList = tickers.join(',');
             
-            for (const ticker of tickers) {
-                try {
-                    const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_API_KEY}`);
-                    const data = await response.json();
-                    
-                    if (data && data.c && data.c > 0) {
-                        // Update the price display for this ticker in trends
-                        const priceEl = document.getElementById(`trend-price-${ticker}`);
+            try {
+                const response = await fetch(
+                    `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${tickerList}&apiKey=${MASSIVE_API_KEY}`
+                );
+                const data = await response.json();
+                
+                if (data.tickers) {
+                    data.tickers.forEach(t => {
+                        const priceEl = document.getElementById(`trend-price-${t.ticker}`);
                         if (priceEl) {
-                            const changeColor = data.dp >= 0 ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
-                            const changeArrow = data.dp >= 0 ? '▲' : '▼';
-                            const changeSign = data.dp >= 0 ? '+' : '';
-                            priceEl.innerHTML = `<span style="color:var(--text-primary)">$${data.c.toFixed(2)}</span> <span style="color:${changeColor}">${changeArrow} ${changeSign}${data.dp.toFixed(2)}%</span>`;
+                            const changeColor = t.todaysChangePerc >= 0 ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                            const changeArrow = t.todaysChangePerc >= 0 ? '▲' : '▼';
+                            const changeSign = t.todaysChangePerc >= 0 ? '+' : '';
+                            const price = t.day?.c || t.lastTrade?.p || 0;
+                            priceEl.innerHTML = `<span style="color:var(--text-primary)">$${price.toFixed(2)}</span> <span style="color:${changeColor}">${changeArrow} ${changeSign}${t.todaysChangePerc?.toFixed(2) || 0}%</span>`;
                         }
                         
-                        // Also store in livePrices for other uses
-                        livePrices[ticker] = {
-                            current: data.c,
-                            change: data.d,
-                            changePercent: data.dp,
+                        // Store in livePrices
+                        livePrices[t.ticker] = {
+                            current: t.day?.c || t.lastTrade?.p || 0,
+                            change: t.todaysChange || 0,
+                            changePercent: t.todaysChangePerc || 0,
                             timestamp: Date.now()
                         };
-                    }
-                    
-                    fetched++;
-                    btn.innerHTML = `<span>Fetching ${fetched}/${tickers.length}...</span>`;
-                    
-                    // Rate limit
-                    if (fetched < tickers.length) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                    }
-                } catch (err) {
-                    console.error(`Error fetching ${ticker}:`, err);
+                    });
                 }
+                
+                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg> ✓ Prices Loaded`;
+                
+            } catch (err) {
+                console.error('Trend price fetch error:', err);
+                btn.innerHTML = '✗ Error';
             }
             
-            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg> ✓ Prices Loaded`;
             btn.disabled = false;
         }
         
-        fetchPricesBtn.addEventListener('click', fetchLivePrices);
+        // Button click handler - toggle polling
+        streamPricesBtn.addEventListener('click', startPricePolling);
+        // ==================== END MASSIVE.COM REST API ====================
 
         // Export
         exportBtn.addEventListener('click', function() {
@@ -4269,7 +5749,7 @@
             cloneClustering.querySelectorAll('.cluster-header svg').forEach(el => el.style.display = 'none');
             
             // Clone other sections and remove collapsed state
-            const sections = ['golden-sweeps-section', 'correlated-signals-section', 'high-conviction-section', 'large-trades-section', 
+            const sections = ['golden-sweeps-section', 'multi-leg-section', 'correlated-signals-section', 'high-conviction-section', 'large-trades-section', 
                             'greeks-section', 'expiration-heatmap-section', 'unusual-section'];
             const clonedSections = {};
             sections.forEach(id => {
@@ -4343,6 +5823,51 @@ h1{font-size:1.5rem;font-weight:700;margin-bottom:0.25rem}
 .summary-table .premium{font-family:'JetBrains Mono',monospace;color:var(--accent-info)}
 .signal-badge{display:inline-block;padding:0.2rem 0.5rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:0.7rem;margin-right:0.25rem;margin-bottom:0.25rem}
 .correlated-flow{background:var(--bg-secondary);border-radius:8px;padding:1rem;margin-bottom:0.75rem}
+.strategy-card{background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;margin-bottom:1rem;overflow:hidden}
+.strategy-card-header{padding:1rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+.strategy-info{flex:1}
+.strategy-top-row{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;flex-wrap:wrap}
+.strategy-name{font-family:'JetBrains Mono',monospace;font-size:0.8rem;padding:0.25rem 0.6rem;border-radius:4px;font-weight:600}
+.strategy-name.bullish{background:rgba(63,185,80,0.15);color:var(--accent-bullish)}
+.strategy-name.bearish{background:rgba(248,81,73,0.15);color:var(--accent-bearish)}
+.strategy-name.neutral{background:rgba(88,166,255,0.15);color:var(--accent-info)}
+.strategy-name.income{background:rgba(163,113,247,0.15);color:var(--accent-purple)}
+.strategy-outlook{font-size:0.75rem;color:var(--text-muted);padding:0.2rem 0.5rem;background:var(--bg-card);border-radius:4px}
+.strategy-description{font-size:0.85rem;color:var(--text-secondary);line-height:1.5;margin-bottom:0.75rem}
+.strategy-metrics{display:flex;gap:1.5rem;flex-wrap:wrap}
+.strategy-metric{display:flex;flex-direction:column;gap:0.15rem}
+.strategy-metric-label{font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em}
+.strategy-metric-value{font-family:'JetBrains Mono',monospace;font-size:0.9rem;font-weight:600}
+.strategy-metric-value.credit{color:var(--accent-bullish)}
+.strategy-metric-value.debit{color:var(--accent-bearish)}
+.strategy-premium{text-align:right}
+.strategy-premium-value{font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:700;color:var(--accent-info)}
+.strategy-premium-label{font-size:0.7rem;color:var(--text-muted)}
+.strategy-legs{border-top:1px solid var(--border-color);background:var(--bg-card);padding:0.75rem 1rem;display:block!important}
+.strategy-leg{display:grid;grid-template-columns:60px 50px 70px 50px 80px 80px 80px;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid var(--border-color);font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center}
+.strategy-leg:last-child{border-bottom:none}
+.strategy-leg-header{color:var(--text-muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em}
+.strategy-education{margin-top:0.75rem;padding:0.75rem;background:rgba(88,166,255,0.05);border:1px solid rgba(88,166,255,0.2);border-radius:8px}
+.strategy-education-title{font-size:0.7rem;color:var(--accent-info);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.35rem}
+.strategy-education-title svg{width:14px;height:14px}
+.strategy-education-text{font-size:0.8rem;color:var(--text-secondary);line-height:1.6}
+.strategy-education-text strong{color:var(--text-primary)}
+.trade-idea{margin-top:1rem;padding:0.75rem;background:rgba(63,185,80,0.05);border:1px solid rgba(63,185,80,0.2);border-radius:8px}
+.trade-idea.bearish{background:rgba(248,81,73,0.05);border-color:rgba(248,81,73,0.2)}
+.trade-idea-title{font-size:0.7rem;color:var(--accent-bullish);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.35rem}
+.trade-idea.bearish .trade-idea-title{color:var(--accent-bearish)}
+.trade-idea-title svg{width:14px;height:14px}
+.trade-idea-spread{display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap}
+.trade-idea-leg{display:flex;align-items:center;gap:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;padding:0.4rem 0.6rem;background:var(--bg-secondary);border-radius:6px}
+.trade-idea-leg .action{font-weight:600}
+.trade-idea-leg .action.buy{color:var(--accent-bullish)}
+.trade-idea-leg .action.sell{color:var(--accent-bearish)}
+.trade-idea-arrow{color:var(--text-muted);font-size:1rem}
+.trade-idea-details{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:0.5rem}
+.trade-idea-detail{font-size:0.75rem}
+.trade-idea-detail-label{color:var(--text-muted);margin-right:0.35rem}
+.trade-idea-detail-value{font-family:'JetBrains Mono',monospace;color:var(--text-primary)}
+.trade-idea-disclaimer{font-size:0.7rem;color:var(--text-muted);font-style:italic;margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border-color)}
 .confirmation-badge{font-family:'JetBrains Mono',monospace;font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:4px}
 .earnings-badge{font-family:'JetBrains Mono',monospace;font-size:0.65rem;padding:0.15rem 0.4rem;border-radius:4px;background:rgba(210,153,34,0.15);color:var(--accent-warning)}
 .generated{text-align:center;color:var(--text-muted);font-size:0.8rem;margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border-color)}
@@ -4351,6 +5876,7 @@ h1{font-size:1.5rem;font-weight:700;margin-bottom:0.25rem}
 <p class="subtitle">${currentFileName} · ${date}</p>
 ${document.getElementById('stats-grid').outerHTML}
 ${clonedSections['golden-sweeps-section']}
+${clonedSections['multi-leg-section']}
 ${clonedSections['correlated-signals-section']}
 ${clonedSections['high-conviction-section']}
 ${cloneClustering.outerHTML}
