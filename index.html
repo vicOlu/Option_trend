@@ -2080,7 +2080,34 @@
                     <span class="section-badge" id="multi-leg-count">0</span>
                     <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
-                <div class="section-content" id="multi-leg-strategies"></div>
+                <div class="section-content" id="multi-leg-strategies">
+                    <!-- Filter bar for multi-leg -->
+                    <div id="multi-leg-filter-bar" style="display:none;margin-bottom:1rem;padding:0.75rem;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-color)">
+                        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center">
+                            <div class="filter-group" style="min-width:140px">
+                                <label class="filter-label">Sentiment</label>
+                                <select class="filter-select" id="filter-multileg-sentiment" onclick="event.stopPropagation()">
+                                    <option value="">All Strategies</option>
+                                    <option value="bullish">📈 Bullish Only</option>
+                                    <option value="bearish">📉 Bearish Only</option>
+                                    <option value="neutral">↔️ Neutral Only</option>
+                                    <option value="income">💰 Income Only</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="min-width:140px">
+                                <label class="filter-label">Ticker</label>
+                                <select class="filter-select" id="filter-multileg-ticker" onclick="event.stopPropagation()">
+                                    <option value="">All Tickers</option>
+                                </select>
+                            </div>
+                            <span id="multileg-filter-count" style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--text-muted);margin-left:auto"></span>
+                        </div>
+                    </div>
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">
+                        Multi-leg strategies combine multiple options contracts executed together. Click any strategy to see individual legs and learn what it means.
+                    </p>
+                    <div id="multi-leg-strategies-list"></div>
+                </div>
             </div>
 
             <div class="section" id="correlated-signals-section" style="display:none">
@@ -2254,6 +2281,174 @@
         function toggleStrategyLegs(idx) {
             const el = document.getElementById(`strategy-legs-${idx}`);
             el.classList.toggle('open');
+        }
+
+        // Multi-Leg filter and render functions
+        function renderMultiLegStrategies() {
+            const sentimentFilter = document.getElementById('filter-multileg-sentiment')?.value || '';
+            const tickerFilter = document.getElementById('filter-multileg-ticker')?.value || '';
+            
+            // Filter strategies
+            let filtered = allMultiLegStrategies.filter(s => {
+                const st = s.strategy;
+                // Determine sentiment category
+                let sentiment = 'neutral';
+                if (st.bias === 'bullish') sentiment = 'bullish';
+                else if (st.bias === 'bearish') sentiment = 'bearish';
+                else if (st.type === 'income') sentiment = 'income';
+                
+                // Apply sentiment filter
+                if (sentimentFilter && sentiment !== sentimentFilter) return false;
+                
+                // Apply ticker filter
+                if (tickerFilter && s.symbol !== tickerFilter) return false;
+                
+                return true;
+            });
+            
+            // Update count badge
+            document.getElementById('multi-leg-count').textContent = filtered.length;
+            
+            // Update filter count
+            const filterCountEl = document.getElementById('multileg-filter-count');
+            if (filterCountEl) {
+                if (sentimentFilter || tickerFilter) {
+                    filterCountEl.textContent = `Showing ${filtered.length} of ${allMultiLegStrategies.length}`;
+                } else {
+                    filterCountEl.textContent = '';
+                }
+            }
+            
+            // Render HTML
+            const mlHtml = filtered.length ? filtered.map((s, idx) => {
+                const st = s.strategy;
+                const biasClass = st.bias === 'bullish' ? 'bullish' : st.bias === 'bearish' ? 'bearish' : st.type === 'income' ? 'income' : 'neutral';
+                const outlookText = st.bias === 'bullish' ? '📈 Bullish' : st.bias === 'bearish' ? '📉 Bearish' : st.type === 'income' ? '💰 Income' : '↔️ Neutral';
+                
+                const legsHtml = s.legs.map(l => {
+                    const action = ['A', 'AA'].includes(l.Side) ? 'BUY' : 'SELL';
+                    const actionColor = action === 'BUY' ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                    return `<div class="strategy-leg">
+                        <span style="color:${actionColor};font-weight:600">${action}</span>
+                        <span>${l.CallPut}</span>
+                        <span>$${l.Strike}</span>
+                        <span>${l.Volume}</span>
+                        <span>$${l.Price.toFixed(2)}</span>
+                        <span style="color:var(--accent-info)">${fmt(l.Premium)}</span>
+                        <span style="color:var(--text-muted)">${l.ExpirationDate}</span>
+                    </div>`;
+                }).join('');
+                
+                return `
+                <div class="strategy-card" id="strategy-${idx}">
+                    <div class="strategy-card-header" onclick="toggleStrategyLegs(${idx})">
+                        <div class="strategy-info">
+                            <div class="strategy-top-row">
+                                <span class="ticker-symbol ticker-clickable" style="font-size:1.1rem">${s.symbol}</span>
+                                <span class="strategy-name ${biasClass}">${st.name}</span>
+                                <span class="strategy-outlook">${outlookText}</span>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">${s.time}</span>
+                            </div>
+                            <div class="strategy-description">${st.description}</div>
+                            <div class="strategy-metrics">
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">${st.isCredit ? 'Net Credit' : 'Net Debit'}</span>
+                                    <span class="strategy-metric-value ${st.isCredit ? 'credit' : 'debit'}">${st.isCredit ? '+' : '-'}${fmt(st.netAmount)}</span>
+                                </div>
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">Max Profit</span>
+                                    <span class="strategy-metric-value" style="color:var(--accent-bullish)">${st.maxProfit || 'N/A'}</span>
+                                </div>
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">Max Loss</span>
+                                    <span class="strategy-metric-value" style="color:var(--accent-bearish)">${st.maxLoss || 'N/A'}</span>
+                                </div>
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">Legs</span>
+                                    <span class="strategy-metric-value" style="color:var(--text-secondary)">${s.legs.length}</span>
+                                </div>
+                                <div class="strategy-metric">
+                                    <span class="strategy-metric-label">DTE</span>
+                                    <span class="strategy-metric-value" style="color:var(--text-secondary)">${s.dte}d</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="strategy-premium">
+                            <div class="strategy-premium-value">${fmt(s.totalPremium)}</div>
+                            <div class="strategy-premium-label">total premium</div>
+                        </div>
+                    </div>
+                    <div class="strategy-legs" id="strategy-legs-${idx}">
+                        <div class="strategy-leg strategy-leg-header">
+                            <span>Action</span>
+                            <span>Type</span>
+                            <span>Strike</span>
+                            <span>Qty</span>
+                            <span>Price</span>
+                            <span>Premium</span>
+                            <span>Exp</span>
+                        </div>
+                        ${legsHtml}
+                        <div class="strategy-education">
+                            <div class="strategy-education-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 16v-4M12 8h.01"/>
+                                </svg>
+                                What This Means
+                            </div>
+                            <div class="strategy-education-text">${st.education}</div>
+                            ${st.breakeven ? `<div style="margin-top:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">Breakeven: ${st.breakeven}</div>` : ''}
+                        </div>
+                        ${s.tradeIdea ? `
+                        <div class="trade-idea ${s.tradeIdea.bias}">
+                            <div class="trade-idea-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Trade Idea: ${s.tradeIdea.name}
+                            </div>
+                            <div class="trade-idea-spread">
+                                <div class="trade-idea-leg">
+                                    <span class="action ${s.tradeIdea.leg1.action.toLowerCase()}">${s.tradeIdea.leg1.action}</span>
+                                    <span>$${s.tradeIdea.leg1.strike} ${s.tradeIdea.type}</span>
+                                </div>
+                                <span class="trade-idea-arrow">+</span>
+                                <div class="trade-idea-leg">
+                                    <span class="action ${s.tradeIdea.leg2.action.toLowerCase()}">${s.tradeIdea.leg2.action}</span>
+                                    <span>$${s.tradeIdea.leg2.strike} ${s.tradeIdea.type}</span>
+                                </div>
+                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">Exp: ${s.tradeIdea.exp}</span>
+                            </div>
+                            <div class="trade-idea-details">
+                                <div class="trade-idea-detail">
+                                    <span class="trade-idea-detail-label">Max Profit:</span>
+                                    <span class="trade-idea-detail-value" style="color:var(--accent-bullish)">${s.tradeIdea.maxProfit}</span>
+                                </div>
+                                <div class="trade-idea-detail">
+                                    <span class="trade-idea-detail-label">Max Loss:</span>
+                                    <span class="trade-idea-detail-value" style="color:var(--accent-bearish)">${s.tradeIdea.maxLoss}</span>
+                                </div>
+                            </div>
+                            <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem">
+                                <span style="color:var(--accent-bullish)">✓ Profit if:</span> ${s.tradeIdea.profitIf}
+                            </div>
+                            <div style="font-size:0.75rem;color:var(--text-secondary)">
+                                <span style="color:var(--accent-bearish)">✗ Lose if:</span> ${s.tradeIdea.loseIf}
+                            </div>
+                            <div class="trade-idea-disclaimer">
+                                ⚠️ This is not financial advice. Always do your own research and consider your risk tolerance before trading.
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>`;
+            }).join('') : '<p style="color:var(--text-muted)">No multi-leg strategies match the current filters.</p>';
+            
+            const listContainer = document.getElementById('multi-leg-strategies-list');
+            if (listContainer) {
+                listContainer.innerHTML = mlHtml;
+            }
         }
 
         // Chart Sidebar Functions
@@ -2915,6 +3110,7 @@
         
         let currentFileName = '';
         let allFlows = []; // Store all flows for filtering
+        let allMultiLegStrategies = []; // Store all multi-leg strategies for filtering
         let alertStreamData = { darkPool: {}, blocks: {}, insider: {}, earnings: {}, sector: {}, weekHigh: {}, weekLow: {}, orb: {}, priceSpike: {}, halted: {}, volumeAlert: {} }; // Store AlertStream data by ticker
         let livePrices = {}; // Store live prices by ticker
         let pricePollingInterval = null; // For REST API polling
@@ -3602,6 +3798,10 @@
         filterRequireBlocks.addEventListener('change', applyFilters);
         filterHighConviction.addEventListener('change', applyFilters);
         filterReset.addEventListener('click', resetFilters);
+
+        // Multi-leg filter event listeners
+        document.getElementById('filter-multileg-sentiment')?.addEventListener('change', renderMultiLegStrategies);
+        document.getElementById('filter-multileg-ticker')?.addEventListener('change', renderMultiLegStrategies);
 
         function resetFilters() {
             filterTicker.value = '';
@@ -5315,142 +5515,27 @@
                 })
                 .filter(g => g.strategy)
                 .sort((a, b) => b.totalPremium - a.totalPremium)
-                .slice(0, 15);
+                .slice(0, 30); // Increased limit since we now filter
             
-            document.getElementById('multi-leg-count').textContent = strategies.length;
+            // Store globally for filtering
+            allMultiLegStrategies = strategies;
+            
+            // Populate multi-leg ticker filter
+            const mlTickers = [...new Set(strategies.map(s => s.symbol))].sort();
+            const mlTickerFilter = document.getElementById('filter-multileg-ticker');
+            if (mlTickerFilter) {
+                mlTickerFilter.innerHTML = '<option value="">All Tickers</option>' + 
+                    mlTickers.map(t => `<option value="${t}">${t}</option>`).join('');
+            }
+            
+            // Show/hide filter bar based on strategies
+            const filterBar = document.getElementById('multi-leg-filter-bar');
+            if (filterBar) {
+                filterBar.style.display = strategies.length > 0 ? 'block' : 'none';
+            }
             
             // Render multi-leg strategies
-            const mlHtml = strategies.length ? strategies.map((s, idx) => {
-                const st = s.strategy;
-                const biasClass = st.bias === 'bullish' ? 'bullish' : st.bias === 'bearish' ? 'bearish' : st.type === 'income' ? 'income' : 'neutral';
-                const outlookText = st.bias === 'bullish' ? '📈 Bullish' : st.bias === 'bearish' ? '📉 Bearish' : st.type === 'income' ? '💰 Income' : '↔️ Neutral';
-                
-                const legsHtml = s.legs.map(l => {
-                    const action = ['A', 'AA'].includes(l.Side) ? 'BUY' : 'SELL';
-                    const actionColor = action === 'BUY' ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
-                    return `<div class="strategy-leg">
-                        <span style="color:${actionColor};font-weight:600">${action}</span>
-                        <span>${l.CallPut}</span>
-                        <span>$${l.Strike}</span>
-                        <span>${l.Volume}</span>
-                        <span>$${l.Price.toFixed(2)}</span>
-                        <span style="color:var(--accent-info)">${fmt(l.Premium)}</span>
-                        <span style="color:var(--text-muted)">${l.ExpirationDate}</span>
-                    </div>`;
-                }).join('');
-                
-                return `
-                <div class="strategy-card" id="strategy-${idx}">
-                    <div class="strategy-card-header" onclick="toggleStrategyLegs(${idx})">
-                        <div class="strategy-info">
-                            <div class="strategy-top-row">
-                                <span class="ticker-symbol ticker-clickable" style="font-size:1.1rem">${s.symbol}</span>
-                                <span class="strategy-name ${biasClass}">${st.name}</span>
-                                <span class="strategy-outlook">${outlookText}</span>
-                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">${s.time}</span>
-                            </div>
-                            <div class="strategy-description">${st.description}</div>
-                            <div class="strategy-metrics">
-                                <div class="strategy-metric">
-                                    <span class="strategy-metric-label">${st.isCredit ? 'Net Credit' : 'Net Debit'}</span>
-                                    <span class="strategy-metric-value ${st.isCredit ? 'credit' : 'debit'}">${st.isCredit ? '+' : '-'}${fmt(st.netAmount)}</span>
-                                </div>
-                                <div class="strategy-metric">
-                                    <span class="strategy-metric-label">Max Profit</span>
-                                    <span class="strategy-metric-value" style="color:var(--accent-bullish)">${st.maxProfit || 'N/A'}</span>
-                                </div>
-                                <div class="strategy-metric">
-                                    <span class="strategy-metric-label">Max Loss</span>
-                                    <span class="strategy-metric-value" style="color:var(--accent-bearish)">${st.maxLoss || 'N/A'}</span>
-                                </div>
-                                <div class="strategy-metric">
-                                    <span class="strategy-metric-label">Legs</span>
-                                    <span class="strategy-metric-value" style="color:var(--text-secondary)">${s.legs.length}</span>
-                                </div>
-                                <div class="strategy-metric">
-                                    <span class="strategy-metric-label">DTE</span>
-                                    <span class="strategy-metric-value" style="color:var(--text-secondary)">${s.dte}d</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="strategy-premium">
-                            <div class="strategy-premium-value">${fmt(s.totalPremium)}</div>
-                            <div class="strategy-premium-label">total premium</div>
-                        </div>
-                    </div>
-                    <div class="strategy-legs" id="strategy-legs-${idx}">
-                        <div class="strategy-leg strategy-leg-header">
-                            <span>Action</span>
-                            <span>Type</span>
-                            <span>Strike</span>
-                            <span>Qty</span>
-                            <span>Price</span>
-                            <span>Premium</span>
-                            <span>Exp</span>
-                        </div>
-                        ${legsHtml}
-                        <div class="strategy-education">
-                            <div class="strategy-education-title">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M12 16v-4M12 8h.01"/>
-                                </svg>
-                                What This Means
-                            </div>
-                            <div class="strategy-education-text">${st.education}</div>
-                            ${st.breakeven ? `<div style="margin-top:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">Breakeven: ${st.breakeven}</div>` : ''}
-                        </div>
-                        ${s.tradeIdea ? `
-                        <div class="trade-idea ${s.tradeIdea.bias}">
-                            <div class="trade-idea-title">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                Trade Idea: ${s.tradeIdea.name}
-                            </div>
-                            <div class="trade-idea-spread">
-                                <div class="trade-idea-leg">
-                                    <span class="action ${s.tradeIdea.leg1.action.toLowerCase()}">${s.tradeIdea.leg1.action}</span>
-                                    <span>$${s.tradeIdea.leg1.strike} ${s.tradeIdea.type}</span>
-                                </div>
-                                <span class="trade-idea-arrow">+</span>
-                                <div class="trade-idea-leg">
-                                    <span class="action ${s.tradeIdea.leg2.action.toLowerCase()}">${s.tradeIdea.leg2.action}</span>
-                                    <span>$${s.tradeIdea.leg2.strike} ${s.tradeIdea.type}</span>
-                                </div>
-                                <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">Exp: ${s.tradeIdea.exp}</span>
-                            </div>
-                            <div class="trade-idea-details">
-                                <div class="trade-idea-detail">
-                                    <span class="trade-idea-detail-label">Max Profit:</span>
-                                    <span class="trade-idea-detail-value" style="color:var(--accent-bullish)">${s.tradeIdea.maxProfit}</span>
-                                </div>
-                                <div class="trade-idea-detail">
-                                    <span class="trade-idea-detail-label">Max Loss:</span>
-                                    <span class="trade-idea-detail-value" style="color:var(--accent-bearish)">${s.tradeIdea.maxLoss}</span>
-                                </div>
-                            </div>
-                            <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem">
-                                <span style="color:var(--accent-bullish)">✓ Profit if:</span> ${s.tradeIdea.profitIf}
-                            </div>
-                            <div style="font-size:0.75rem;color:var(--text-secondary)">
-                                <span style="color:var(--accent-bearish)">✗ Lose if:</span> ${s.tradeIdea.loseIf}
-                            </div>
-                            <div class="trade-idea-disclaimer">
-                                ⚠️ This is not financial advice. Always do your own research and consider your risk tolerance before trading.
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>`;
-            }).join('') : '<p style="color:var(--text-muted)">No multi-leg strategies detected. Multi-leg trades appear as "ML/" in the Type column.</p>';
-            
-            document.getElementById('multi-leg-strategies').innerHTML = `
-                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">
-                    Multi-leg strategies combine multiple options contracts executed together. Click any strategy to see individual legs and learn what it means.
-                </p>
-                ${mlHtml}
-            `;
+            renderMultiLegStrategies();
             // ==================== END MULTI-LEG STRATEGY DETECTION ====================
 
             // Golden Sweeps - Bullish (AA Calls) and Bearish (AA Puts, BB Calls)
