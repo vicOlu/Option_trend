@@ -395,6 +395,18 @@
             height: 14px;
         }
 
+        .tracked-flow-expired {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid rgba(248, 81, 73, 0.3);
+            color: var(--accent-bearish);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 0.4rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+        }
+
         /* Track button for flow items */
         .track-btn {
             background: none;
@@ -2348,6 +2360,7 @@
                 side: flow.Side,
                 type: flow.Type,
                 color: flow.Color,
+                oi: flow.OI || 0,
                 isCluster: isCluster,
                 trackedAt: new Date().toISOString(),
                 date: flow.CreatedDate || new Date().toISOString().split('T')[0],
@@ -2401,6 +2414,17 @@
                 // Only show BTO/STO for individual trades, not cluster-based tracks
                 const actionHtml = t.isCluster ? '' : `<span style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:${actionColor}">${actionLabel}</span>`;
                 
+                // Calculate live DTE
+                const expDate = new Date(t.exp);
+                const today = new Date();
+                const liveDTE = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                const isExpired = liveDTE < 0;
+                const dteDisplay = isExpired ? 'EXPIRED' : `${liveDTE}d`;
+                const dteColor = isExpired ? 'var(--accent-bearish)' : liveDTE <= 2 ? 'var(--accent-warning)' : 'var(--text-secondary)';
+                
+                // Add expired warning
+                const expiredHtml = isExpired ? '<div class="tracked-flow-expired">⚠ CONTRACT EXPIRED</div>' : '';
+                
                 return `<div class="tracked-flow-item" data-id="${t.id}">
                     <div class="tracked-flow-header">
                         <div class="tracked-flow-ticker">
@@ -2429,7 +2453,7 @@
                         </div>
                         <div class="tracked-flow-detail">
                             <span class="tracked-flow-detail-label">DTE</span>
-                            <span class="tracked-flow-detail-value">${t.dte}d</span>
+                            <span class="tracked-flow-detail-value" style="color:${dteColor}">${dteDisplay}</span>
                         </div>
                         <div class="tracked-flow-detail">
                             <span class="tracked-flow-detail-label">Spot</span>
@@ -2439,7 +2463,12 @@
                             <span class="tracked-flow-detail-label">Vol</span>
                             <span class="tracked-flow-detail-value">${t.volume?.toLocaleString() || '-'}</span>
                         </div>
+                        <div class="tracked-flow-detail">
+                            <span class="tracked-flow-detail-label">OI</span>
+                            <span class="tracked-flow-detail-value">${t.oi?.toLocaleString() || '-'}</span>
+                        </div>
                     </div>
+                    ${expiredHtml}
                     <div class="tracked-flow-date">Added: ${new Date(t.trackedAt).toLocaleDateString()} · Flow: ${t.date} ${t.time || ''}</div>
                 </div>`;
             }).join('');
@@ -2884,7 +2913,7 @@
         
         // Massive.com (formerly Polygon.io) API Configuration
         // Get your free API key at https://massive.com
-        const MASSIVE_API_KEY = 'YOUR_MASSIVE_API_KEY'; // Replace with your API key
+        const MASSIVE_API_KEY = '9LCmPgD1rsJ48xtjXZ_d9E2oq0ehmOBT'; // Replace with your API key
         
         // Supabase configuration
         const SUPABASE_URL = 'https://bwqpikngknfmihgmaody.supabase.co';
