@@ -2304,20 +2304,24 @@
         function loadTrackedFlows() {
             try {
                 const saved = localStorage.getItem('trackedFlows');
+                console.log('Loading tracked flows from localStorage:', saved ? 'Found data' : 'No data');
                 if (saved) {
                     trackedFlows = JSON.parse(saved);
-                    renderTrackedFlows();
+                    console.log('Loaded', trackedFlows.length, 'tracked flows');
                 }
             } catch (e) {
                 console.error('Error loading tracked flows:', e);
                 trackedFlows = [];
             }
+            // Always render, even if empty
+            renderTrackedFlows();
         }
         
         // Save tracked flows to localStorage
         function saveTrackedFlows() {
             try {
                 localStorage.setItem('trackedFlows', JSON.stringify(trackedFlows));
+                console.log('Saved', trackedFlows.length, 'tracked flows to localStorage');
             } catch (e) {
                 console.error('Error saving tracked flows:', e);
             }
@@ -2577,10 +2581,15 @@
         }
         
         // Initialize tracked flows on page load
-        loadTrackedFlows();
-        
-        // Clear button event listener
-        document.getElementById('clear-tracked-btn').addEventListener('click', clearTrackedFlows);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                loadTrackedFlows();
+                document.getElementById('clear-tracked-btn').addEventListener('click', clearTrackedFlows);
+            });
+        } else {
+            loadTrackedFlows();
+            document.getElementById('clear-tracked-btn').addEventListener('click', clearTrackedFlows);
+        }
         // ==================== END TRACKED FLOWS ====================
         
         function loadChart(symbol, interval = currentInterval, range = currentRange) {
