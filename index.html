@@ -497,9 +497,9 @@
             color: var(--accent-info);
         }
 
-        .strategy-name.income {
-            background: rgba(163, 113, 247, 0.15);
-            color: var(--accent-purple);
+        .strategy-name.volatility {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--accent-warning);
         }
 
         .strategy-outlook {
@@ -2084,14 +2084,15 @@
                     <!-- Filter bar for multi-leg -->
                     <div id="multi-leg-filter-bar" style="display:none;margin-bottom:1rem;padding:0.75rem;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-color)">
                         <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center">
-                            <div class="filter-group" style="min-width:140px">
-                                <label class="filter-label">Sentiment</label>
+                            <div class="filter-group" style="min-width:160px">
+                                <label class="filter-label">Strategy Type</label>
                                 <select class="filter-select" id="filter-multileg-sentiment" onclick="event.stopPropagation()">
+                                    <option value="exclude-neutral" selected>Exclude Neutral</option>
                                     <option value="">All Strategies</option>
-                                    <option value="bullish">📈 Bullish Only</option>
-                                    <option value="bearish">📉 Bearish Only</option>
-                                    <option value="neutral">↔️ Neutral Only</option>
-                                    <option value="income">💰 Income Only</option>
+                                    <option value="bullish">📈 Bull Strategies</option>
+                                    <option value="bearish">📉 Bear Strategies</option>
+                                    <option value="neutral">↔️ Neutral Strategies</option>
+                                    <option value="volatility">🎢 Volatility Strategies</option>
                                 </select>
                             </div>
                             <div class="filter-group" style="min-width:140px">
@@ -2193,6 +2194,25 @@
                 <div class="section-content" id="expiration-heatmap"></div>
             </div>
 
+            <div class="section collapsed" id="ticker-analysis-section">
+                <div class="section-header" onclick="toggleSection('ticker-analysis-section')">
+                    <div class="section-icon" style="background: rgba(88, 166, 255, 0.15); color: var(--accent-info);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Ticker Analysis</span>
+                    <span class="section-badge" id="ticker-analysis-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="ticker-analysis">
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">
+                        McMillan-style analysis: P/C Ratio (>0.7 bearish, <0.5 bullish), Vol/OI Ratio (>1.25 unusual activity), DTE zones for time decay.
+                    </p>
+                    <div id="ticker-analysis-table"></div>
+                </div>
+            </div>
+
             <div class="section collapsed" id="unusual-section">
                 <div class="section-header" onclick="toggleSection('unusual-section')">
                     <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
@@ -2285,20 +2305,31 @@
 
         // Multi-Leg filter and render functions
         function renderMultiLegStrategies() {
-            const sentimentFilter = document.getElementById('filter-multileg-sentiment')?.value || '';
+            const categoryFilter = document.getElementById('filter-multileg-sentiment')?.value || '';
             const tickerFilter = document.getElementById('filter-multileg-ticker')?.value || '';
             
-            // Filter strategies
+            // Filter strategies based on OIC categories
             let filtered = allMultiLegStrategies.filter(s => {
                 const st = s.strategy;
-                // Determine sentiment category
-                let sentiment = 'neutral';
-                if (st.bias === 'bullish') sentiment = 'bullish';
-                else if (st.bias === 'bearish') sentiment = 'bearish';
-                else if (st.type === 'income') sentiment = 'income';
+                // Determine OIC category
+                let category = 'neutral'; // default
                 
-                // Apply sentiment filter
-                if (sentimentFilter && sentiment !== sentimentFilter) return false;
+                // Bull strategies: bullish bias
+                if (st.bias === 'bullish') category = 'bullish';
+                // Bear strategies: bearish bias
+                else if (st.bias === 'bearish') category = 'bearish';
+                // Volatility strategies: Long Straddle, Long Strangle (type = volatility AND buying)
+                else if (st.type === 'volatility' && !st.isCredit) category = 'volatility';
+                // Neutral strategies: everything else (Short Straddle, Short Strangle, Iron Condor, Iron Butterfly, Calendar, etc.)
+                else category = 'neutral';
+                
+                // Apply category filter
+                if (categoryFilter === 'exclude-neutral') {
+                    // Exclude neutral, show everything else
+                    if (category === 'neutral') return false;
+                } else if (categoryFilter && category !== categoryFilter) {
+                    return false;
+                }
                 
                 // Apply ticker filter
                 if (tickerFilter && s.symbol !== tickerFilter) return false;
@@ -2312,7 +2343,7 @@
             // Update filter count
             const filterCountEl = document.getElementById('multileg-filter-count');
             if (filterCountEl) {
-                if (sentimentFilter || tickerFilter) {
+                if (categoryFilter || tickerFilter) {
                     filterCountEl.textContent = `Showing ${filtered.length} of ${allMultiLegStrategies.length}`;
                 } else {
                     filterCountEl.textContent = '';
@@ -2322,8 +2353,17 @@
             // Render HTML
             const mlHtml = filtered.length ? filtered.map((s, idx) => {
                 const st = s.strategy;
-                const biasClass = st.bias === 'bullish' ? 'bullish' : st.bias === 'bearish' ? 'bearish' : st.type === 'income' ? 'income' : 'neutral';
-                const outlookText = st.bias === 'bullish' ? '📈 Bullish' : st.bias === 'bearish' ? '📉 Bearish' : st.type === 'income' ? '💰 Income' : '↔️ Neutral';
+                // Determine OIC category for display
+                let category, categoryClass, categoryText;
+                if (st.bias === 'bullish') {
+                    category = 'bullish'; categoryClass = 'bullish'; categoryText = '📈 Bull';
+                } else if (st.bias === 'bearish') {
+                    category = 'bearish'; categoryClass = 'bearish'; categoryText = '📉 Bear';
+                } else if (st.type === 'volatility' && !st.isCredit) {
+                    category = 'volatility'; categoryClass = 'volatility'; categoryText = '🎢 Volatility';
+                } else {
+                    category = 'neutral'; categoryClass = 'neutral'; categoryText = '↔️ Neutral';
+                }
                 
                 const legsHtml = s.legs.map(l => {
                     const action = ['A', 'AA'].includes(l.Side) ? 'BUY' : 'SELL';
@@ -2345,8 +2385,8 @@
                         <div class="strategy-info">
                             <div class="strategy-top-row">
                                 <span class="ticker-symbol ticker-clickable" style="font-size:1.1rem">${s.symbol}</span>
-                                <span class="strategy-name ${biasClass}">${st.name}</span>
-                                <span class="strategy-outlook">${outlookText}</span>
+                                <span class="strategy-name ${categoryClass}">${st.name}</span>
+                                <span class="strategy-outlook">${categoryText}</span>
                                 <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">${s.time}</span>
                             </div>
                             <div class="strategy-description">${st.description}</div>
@@ -3165,6 +3205,112 @@
             }
         }
         
+        // Fetch historical IV stats for tickers (for percentile analysis)
+        // Returns: { AAPL: { avgIV: 0.35, minIV: 0.20, maxIV: 0.65, p25: 0.28, p75: 0.45, count: 150 }, ... }
+        async function fetchHistoricalIVStats(tickers, lookbackDays = 30) {
+            const client = await initSupabase();
+            if (!client || !tickers.length) return {};
+            
+            try {
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - lookbackDays);
+                const startDateStr = startDate.toISOString().split('T')[0];
+                
+                const { data, error } = await client
+                    .from('options_flow')
+                    .select('symbol, implied_volatility')
+                    .in('symbol', tickers)
+                    .gte('flow_date', startDateStr)
+                    .not('implied_volatility', 'is', null)
+                    .gt('implied_volatility', 0);
+                
+                if (error) throw error;
+                if (!data || data.length === 0) return {};
+                
+                // Group by ticker and calculate stats
+                const stats = {};
+                const byTicker = {};
+                
+                data.forEach(row => {
+                    if (!byTicker[row.symbol]) byTicker[row.symbol] = [];
+                    byTicker[row.symbol].push(row.implied_volatility);
+                });
+                
+                Object.entries(byTicker).forEach(([symbol, ivValues]) => {
+                    if (ivValues.length < 5) return; // Need minimum data
+                    
+                    ivValues.sort((a, b) => a - b);
+                    const count = ivValues.length;
+                    const sum = ivValues.reduce((s, v) => s + v, 0);
+                    const avgIV = sum / count;
+                    const minIV = ivValues[0];
+                    const maxIV = ivValues[count - 1];
+                    const p25 = ivValues[Math.floor(count * 0.25)];
+                    const p50 = ivValues[Math.floor(count * 0.5)];
+                    const p75 = ivValues[Math.floor(count * 0.75)];
+                    
+                    stats[symbol] = { avgIV, minIV, maxIV, p25, p50, p75, count };
+                });
+                
+                console.log(`Fetched IV stats for ${Object.keys(stats).length} tickers (${lookbackDays}d lookback)`);
+                return stats;
+            } catch (err) {
+                console.error('Error fetching IV stats:', err);
+                return {};
+            }
+        }
+        
+        // Calculate IV percentile for a given IV value against historical stats
+        function calcIVPercentile(currentIV, tickerStats) {
+            if (!currentIV || !tickerStats || tickerStats.count < 10) return null;
+            
+            // Linear interpolation between min and max
+            const range = tickerStats.maxIV - tickerStats.minIV;
+            if (range <= 0) return 50;
+            
+            const percentile = Math.round(((currentIV - tickerStats.minIV) / range) * 100);
+            return Math.max(0, Math.min(100, percentile));
+        }
+        
+        // Store historical IV stats globally
+        let historicalIVStats = {};
+        
+        // Update ticker analysis table with IV percentiles once historical data is loaded
+        function updateIVPercentiles(flows) {
+            const tickerCells = document.querySelectorAll('#ticker-analysis-table .iv-percentile-cell');
+            if (!tickerCells.length) return;
+            
+            tickerCells.forEach(cell => {
+                const ticker = cell.dataset.ticker;
+                const currentIV = parseFloat(cell.dataset.iv);
+                
+                if (!ticker || !currentIV || !historicalIVStats[ticker]) return;
+                
+                const percentile = calcIVPercentile(currentIV, historicalIVStats[ticker]);
+                if (percentile === null) return;
+                
+                // Determine color based on percentile
+                let pctColor, pctBg;
+                if (percentile >= 80) {
+                    pctColor = 'var(--accent-bearish)';
+                    pctBg = 'rgba(248, 81, 73, 0.15)';
+                } else if (percentile >= 50) {
+                    pctColor = 'var(--accent-warning)';
+                    pctBg = 'rgba(210, 153, 34, 0.15)';
+                } else {
+                    pctColor = 'var(--accent-bullish)';
+                    pctBg = 'rgba(63, 185, 80, 0.15)';
+                }
+                
+                // Add percentile badge
+                const pctBadge = document.createElement('span');
+                pctBadge.style.cssText = `font-size:0.65rem;color:${pctColor};background:${pctBg};padding:0.1rem 0.3rem;border-radius:3px;margin-left:0.3rem`;
+                pctBadge.textContent = `${percentile}th`;
+                pctBadge.title = `IV Percentile vs last 30 days (${historicalIVStats[ticker].count} trades)`;
+                cell.appendChild(pctBadge);
+            });
+        }
+        
         // Database status
         const dbStatus = document.getElementById('db-status');
         const loadTrendsBtn = document.getElementById('load-trends-btn');
@@ -3290,7 +3436,9 @@
                     CreatedDate: f.flow_date,
                     Uoa: f.uoa,
                     Security: f.security || 'STOCK',
-                    Price: f.premium && f.volume ? (f.premium / f.volume / 100) : 0
+                    Price: f.price || (f.premium && f.volume ? (f.premium / f.volume / 100) : 0),
+                    OI: parseInt(f.oi) || 0,
+                    ImpliedVolatility: f.implied_volatility || null
                 }));
                 
                 // Apply historical filters
@@ -3991,10 +4139,25 @@
                             row.Premium = parseInt(row.Premium) || 0;
                             row.Dte = parseInt(row.Dte) || 0;
                             row.OI = parseInt(row.OI) || 0;
+                            
+                            // Calculate IV if not already present
+                            if (!row.ImpliedVolatility && row.Spot > 0 && row.Strike > 0 && row.Price > 0) {
+                                const T = Math.max(row.Dte, 0.5) / 365;
+                                const r = 0.05;
+                                const isCall = row.CallPut === 'CALL';
+                                row.ImpliedVolatility = calcIV(row.Spot, row.Strike, T, r, row.Price, isCall);
+                            }
                         });
                         
                         // Filter out $0 spot tickers (noise/bad data)
                         allFlows = allFlows.filter(row => row.Spot > 0);
+                        
+                        // Filter out deleted/cancelled flows (#FF0000 = red = deleted)
+                        const deletedCount = allFlows.filter(row => row.Color === '#FF0000').length;
+                        allFlows = allFlows.filter(row => row.Color !== '#FF0000');
+                        if (deletedCount > 0) {
+                            console.log(`Excluded ${deletedCount} deleted/cancelled flows (#FF0000)`);
+                        }
                         
                         populateFilters(allFlows);
                         analyze(allFlows);
@@ -4010,7 +4173,17 @@
             });
         }
 
-        function analyze(flows, highConvictionOnly = false, uniqueTickersOnly = false, requireBlocks = false) {
+        async function analyze(flows, highConvictionOnly = false, uniqueTickersOnly = false, requireBlocks = false) {
+            
+            // Fetch historical IV stats for tickers in this flow (async, non-blocking)
+            const uniqueTickers = [...new Set(flows.map(f => f.Symbol))];
+            fetchHistoricalIVStats(uniqueTickers, 30).then(stats => {
+                historicalIVStats = stats;
+                // Update UI with percentiles if we have stats
+                if (Object.keys(stats).length > 0) {
+                    updateIVPercentiles(flows);
+                }
+            }).catch(err => console.log('IV stats fetch skipped:', err.message));
 
             const total = flows.reduce((s, f) => s + f.Premium, 0);
             const calls = flows.filter(f => f.CallPut === 'CALL');
@@ -4024,14 +4197,47 @@
             // Aggression ratio (AA/BB vs A/B)
             const aggressiveCount = flows.filter(f => ['AA','BB'].includes(f.Side)).length;
             const aggressionPct = flows.length > 0 ? Math.round((aggressiveCount / flows.length) * 100) : 0;
+            
+            // Put/Call Ratio (by volume)
+            const callVolume = calls.reduce((s, f) => s + f.Volume, 0);
+            const putVolume = puts.reduce((s, f) => s + f.Volume, 0);
+            const pcRatio = callVolume > 0 ? (putVolume / callVolume).toFixed(2) : '0.00';
+            const pcSentiment = pcRatio > 0.7 ? 'bearish' : pcRatio < 0.5 ? 'bullish' : '';
+            
+            // Average Vol/OI ratio (excluding trades with 0 OI)
+            const tradesWithOI = flows.filter(f => f.OI > 0);
+            const avgVolOI = tradesWithOI.length > 0 
+                ? (tradesWithOI.reduce((s, f) => s + (f.Volume / f.OI), 0) / tradesWithOI.length).toFixed(2)
+                : 'N/A';
+            const highVolOICount = tradesWithOI.filter(f => (f.Volume / f.OI) > 1.25).length;
+            
+            // Average IV across all flows
+            const flowsWithIV = flows.filter(f => f.ImpliedVolatility && f.ImpliedVolatility > 0);
+            const avgIV = flowsWithIV.length > 0 
+                ? (flowsWithIV.reduce((s, f) => s + f.ImpliedVolatility, 0) / flowsWithIV.length)
+                : null;
+            const avgIVDisplay = avgIV ? (avgIV * 100).toFixed(0) + '%' : 'N/A';
+            const ivSentiment = avgIV > 0.5 ? 'bearish' : avgIV && avgIV < 0.3 ? 'bullish' : '';
 
             document.getElementById('stats-grid').innerHTML = `
                 <div class="stat-card"><div class="stat-value">${fmt(total)}</div><div class="stat-label">Total Premium</div></div>
                 <div class="stat-card"><div class="stat-value bullish">${fmt(bullish)}</div><div class="stat-label">Bullish Flow</div></div>
                 <div class="stat-card"><div class="stat-value bearish">${fmt(bearish)}</div><div class="stat-label">Bearish Flow</div></div>
-                <div class="stat-card"><div class="stat-value">${sweeps}</div><div class="stat-label">Sweep Trades</div></div>
-                <div class="stat-card"><div class="stat-value">${aggressionPct}%</div><div class="stat-label">Aggression Ratio</div></div>
-                <div class="stat-card"><div class="stat-value">${flows.length}</div><div class="stat-label">Total Trades</div></div>
+                <div class="stat-card">
+                    <div class="stat-value ${pcSentiment}">${pcRatio}</div>
+                    <div class="stat-label">Put/Call Ratio</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">${pcRatio > 0.7 ? '📉 Bearish' : pcRatio < 0.5 ? '📈 Bullish' : '➡️ Neutral'}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value ${ivSentiment}">${avgIVDisplay}</div>
+                    <div class="stat-label">Avg IV</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">${avgIV > 0.5 ? '🔴 High' : avgIV && avgIV < 0.3 ? '🔵 Low' : avgIV ? '🟢 Normal' : ''}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${avgVolOI}</div>
+                    <div class="stat-label">Avg Vol/OI</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">${highVolOICount} unusual (>1.25)</div>
+                </div>
             `;
 
             // Correlated Signals (AlertStream cross-reference)
@@ -4638,6 +4844,24 @@
                 const earningsBadge = getEarningsBadge(t.Symbol);
                 const livePriceInfo = getLivePriceInfo(t.Symbol, t.Spot, dir);
                 
+                // DTE Zone (McMillan-style time decay zones)
+                let dteZone, dteColor, dteIcon;
+                if (t.Dte <= 7) {
+                    dteZone = `${t.Dte}d`; dteColor = 'var(--accent-bearish)'; dteIcon = '🔥';
+                } else if (t.Dte <= 21) {
+                    dteZone = `${t.Dte}d`; dteColor = 'var(--accent-warning)'; dteIcon = '⚡';
+                } else if (t.Dte <= 45) {
+                    dteZone = `${t.Dte}d`; dteColor = 'var(--accent-bullish)'; dteIcon = '✅';
+                } else {
+                    dteZone = `${t.Dte}d`; dteColor = 'var(--accent-info)'; dteIcon = '📅';
+                }
+                const dteBadge = `<span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:${dteColor};background:${dteColor}15;padding:0.15rem 0.4rem;border-radius:4px">${dteIcon} ${dteZone}</span>`;
+                
+                // Vol/OI ratio badge
+                const volOiRatio = t.OI > 0 ? (t.Volume / t.OI) : 0;
+                const isUnusualVolOi = volOiRatio > 1.25;
+                const volOiBadge = t.OI > 0 ? `<span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:${isUnusualVolOi ? 'var(--accent-warning)' : 'var(--text-muted)'};background:${isUnusualVolOi ? 'rgba(210,153,34,0.15)' : 'var(--bg-card)'};padding:0.15rem 0.4rem;border-radius:4px">${volOiRatio.toFixed(1)}x OI${isUnusualVolOi ? ' 🔥' : ''}</span>` : '';
+                
                 // Check if already tracked
                 const isTracked = isFlowTracked(t);
                 const trackClass = isTracked ? 'tracked' : '';
@@ -4659,6 +4883,8 @@
                             ${earningsBadge}
                             ${livePriceInfo.badge}
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-secondary)">$${t.Strike} · ${t.ExpirationDate}</span>
+                            ${dteBadge}
+                            ${volOiBadge}
                             <span style="font-size:0.7rem;color:var(--text-muted)">${t.Type}</span>
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:${sideColor}">${sideLabel}</span>
                             <span style="font-size:0.8rem">${oiDot}</span>
@@ -4986,13 +5212,32 @@
                 : '<p style="color:var(--text-muted)">Unable to calculate Greeks. Ensure trades have valid spot price, strike, and option price data.</p>';
             // ==================== END GREEKS ANALYSIS ====================
 
-            // Summary with Net Sentiment - require 60%+ directional dominance, limit 10
+            // Summary with Net Sentiment, P/C Ratio, and Vol/OI - require 60%+ directional dominance, limit 10
             const summ = {};
             flows.forEach(f => {
-                if (!summ[f.Symbol]) summ[f.Symbol] = { sym: f.Symbol, prem: 0, vol: 0, n: 0, bullish: 0, bearish: 0 };
+                if (!summ[f.Symbol]) summ[f.Symbol] = { 
+                    sym: f.Symbol, 
+                    prem: 0, 
+                    vol: 0, 
+                    n: 0, 
+                    bullish: 0, 
+                    bearish: 0,
+                    callVol: 0,
+                    putVol: 0,
+                    totalOI: 0,
+                    oiCount: 0
+                };
                 summ[f.Symbol].prem += f.Premium;
                 summ[f.Symbol].vol += f.Volume;
                 summ[f.Symbol].n++;
+                // Track call/put volume for P/C ratio
+                if (f.CallPut === 'CALL') summ[f.Symbol].callVol += f.Volume;
+                if (f.CallPut === 'PUT') summ[f.Symbol].putVol += f.Volume;
+                // Track OI for Vol/OI ratio
+                if (f.OI > 0) {
+                    summ[f.Symbol].totalOI += f.OI;
+                    summ[f.Symbol].oiCount++;
+                }
                 // Determine if bullish or bearish
                 const isBullish = (f.CallPut === 'CALL' && ['A','AA'].includes(f.Side)) || (f.CallPut === 'PUT' && ['B','BB'].includes(f.Side));
                 const isBearish = (f.CallPut === 'PUT' && ['A','AA'].includes(f.Side)) || (f.CallPut === 'CALL' && ['B','BB'].includes(f.Side));
@@ -5103,6 +5348,150 @@
                     }).join('')}
                 </div>` : '<p style="color:var(--text-muted)">No expiration data available.</p>';
             document.getElementById('expiration-heatmap').innerHTML = expHtml;
+
+            // ==================== TICKER ANALYSIS (P/C Ratio, Vol/OI, DTE Zone) ====================
+            const tickerAnalysis = Object.values(summ)
+                .filter(t => t.n >= 2) // At least 2 trades
+                .map(t => {
+                    // Calculate P/C ratio
+                    const pcRatio = t.callVol > 0 ? (t.putVol / t.callVol) : (t.putVol > 0 ? 999 : 0);
+                    const pcSentiment = pcRatio > 0.7 ? 'bearish' : pcRatio < 0.5 ? 'bullish' : 'neutral';
+                    
+                    // Calculate Vol/OI ratio
+                    const avgOI = t.oiCount > 0 ? (t.totalOI / t.oiCount) : 0;
+                    const volOiRatio = avgOI > 0 ? (t.vol / avgOI) : 0;
+                    const isUnusual = volOiRatio > 1.25;
+                    
+                    // Calculate net sentiment
+                    const net = t.bullish - t.bearish;
+                    const netSentiment = net > 0 ? 'bullish' : net < 0 ? 'bearish' : 'neutral';
+                    
+                    // Get average DTE for this ticker
+                    const tickerFlows = flows.filter(f => f.Symbol === t.sym);
+                    const avgDte = tickerFlows.length > 0 
+                        ? Math.round(tickerFlows.reduce((s, f) => s + f.Dte, 0) / tickerFlows.length)
+                        : 0;
+                    
+                    // DTE Zone classification (McMillan-style)
+                    let dteZone, dteColor, dteIcon;
+                    if (avgDte <= 7) {
+                        dteZone = '0-7d'; dteColor = 'var(--accent-bearish)'; dteIcon = '🔥';
+                    } else if (avgDte <= 21) {
+                        dteZone = '8-21d'; dteColor = 'var(--accent-warning)'; dteIcon = '⚡';
+                    } else if (avgDte <= 45) {
+                        dteZone = '22-45d'; dteColor = 'var(--accent-bullish)'; dteIcon = '✅';
+                    } else {
+                        dteZone = '45d+'; dteColor = 'var(--accent-info)'; dteIcon = '📅';
+                    }
+                    
+                    // Calculate average IV for this ticker
+                    const flowsWithIV = tickerFlows.filter(f => f.ImpliedVolatility && f.ImpliedVolatility > 0);
+                    const avgIV = flowsWithIV.length > 0 
+                        ? flowsWithIV.reduce((s, f) => s + f.ImpliedVolatility, 0) / flowsWithIV.length
+                        : null;
+                    
+                    // IV classification (McMillan-style)
+                    let ivLevel, ivColor, ivIcon;
+                    if (avgIV === null) {
+                        ivLevel = 'N/A'; ivColor = 'var(--text-muted)'; ivIcon = '';
+                    } else if (avgIV > 0.8) {
+                        ivLevel = 'Very High'; ivColor = 'var(--accent-bearish)'; ivIcon = '🔴';
+                    } else if (avgIV > 0.5) {
+                        ivLevel = 'High'; ivColor = 'var(--accent-warning)'; ivIcon = '🟠';
+                    } else if (avgIV > 0.3) {
+                        ivLevel = 'Normal'; ivColor = 'var(--text-secondary)'; ivIcon = '🟢';
+                    } else {
+                        ivLevel = 'Low'; ivColor = 'var(--accent-info)'; ivIcon = '🔵';
+                    }
+                    
+                    return {
+                        ...t,
+                        pcRatio,
+                        pcSentiment,
+                        volOiRatio,
+                        isUnusual,
+                        net,
+                        netSentiment,
+                        avgDte,
+                        dteZone,
+                        dteColor,
+                        dteIcon,
+                        avgIV,
+                        ivLevel,
+                        ivColor,
+                        ivIcon
+                    };
+                })
+                .sort((a, b) => b.prem - a.prem)
+                .slice(0, 20);
+            
+            document.getElementById('ticker-analysis-count').textContent = tickerAnalysis.length;
+            
+            const tickerAnalysisHtml = tickerAnalysis.length ? `
+                <div style="overflow-x:auto">
+                    <table class="summary-table" style="min-width:900px">
+                        <thead>
+                            <tr>
+                                <th>Ticker</th>
+                                <th>Premium</th>
+                                <th>Net Flow</th>
+                                <th style="text-align:center">P/C Ratio</th>
+                                <th style="text-align:center">Vol/OI</th>
+                                <th style="text-align:center">Avg IV</th>
+                                <th style="text-align:center">Avg DTE</th>
+                                <th>Trades</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tickerAnalysis.map(t => {
+                                const netColor = t.net > 0 ? 'var(--accent-bullish)' : t.net < 0 ? 'var(--accent-bearish)' : 'var(--text-muted)';
+                                const netSign = t.net > 0 ? '+' : '';
+                                const pcColor = t.pcSentiment === 'bullish' ? 'var(--accent-bullish)' : t.pcSentiment === 'bearish' ? 'var(--accent-bearish)' : 'var(--text-secondary)';
+                                const pcIcon = t.pcSentiment === 'bullish' ? '📈' : t.pcSentiment === 'bearish' ? '📉' : '➡️';
+                                const volOiColor = t.isUnusual ? 'var(--accent-warning)' : 'var(--text-secondary)';
+                                const volOiBg = t.isUnusual ? 'rgba(210, 153, 34, 0.15)' : 'transparent';
+                                
+                                return `<tr>
+                                    <td class="ticker ticker-clickable">${t.sym}</td>
+                                    <td class="premium">${fmt(t.prem)}</td>
+                                    <td style="color:${netColor};font-weight:600">${netSign}${fmt(Math.abs(t.net))}</td>
+                                    <td style="text-align:center">
+                                        <span style="color:${pcColor};font-family:'JetBrains Mono',monospace;font-size:0.85rem">
+                                            ${pcIcon} ${t.pcRatio === 999 ? '∞' : t.pcRatio.toFixed(2)}
+                                        </span>
+                                    </td>
+                                    <td style="text-align:center">
+                                        <span style="color:${volOiColor};font-family:'JetBrains Mono',monospace;font-size:0.85rem;padding:0.15rem 0.4rem;border-radius:4px;background:${volOiBg}">
+                                            ${t.volOiRatio > 0 ? t.volOiRatio.toFixed(2) : 'N/A'}${t.isUnusual ? ' 🔥' : ''}
+                                        </span>
+                                    </td>
+                                    <td style="text-align:center" class="iv-percentile-cell" data-ticker="${t.sym}" data-iv="${t.avgIV || ''}">
+                                        <span style="color:${t.ivColor};font-family:'JetBrains Mono',monospace;font-size:0.85rem">
+                                            ${t.ivIcon} ${t.avgIV ? (t.avgIV * 100).toFixed(0) + '%' : 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td style="text-align:center">
+                                        <span style="color:${t.dteColor};font-family:'JetBrains Mono',monospace;font-size:0.8rem">
+                                            ${t.dteIcon} ${t.avgDte}d
+                                        </span>
+                                    </td>
+                                    <td style="color:var(--text-muted)">${t.n}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:1rem;padding:0.75rem;background:var(--bg-secondary);border-radius:8px;font-size:0.75rem;color:var(--text-muted)">
+                    <div style="display:flex;flex-wrap:wrap;gap:1.5rem">
+                        <div><strong>P/C Ratio:</strong> 📈 <0.5 Bullish | ➡️ 0.5-0.7 Neutral | 📉 >0.7 Bearish</div>
+                        <div><strong>Vol/OI:</strong> >1.25 = 🔥 Unusual Activity</div>
+                        <div><strong>Avg IV:</strong> 🔵 <30% Low | 🟢 30-50% Normal | 🟠 50-80% High | 🔴 >80% Very High</div>
+                        <div><strong>DTE Zone:</strong> 🔥 0-7d Decay | ⚡ 8-21d Fast | ✅ 22-45d Sweet Spot | 📅 45d+ LEAPS</div>
+                    </div>
+                </div>
+            ` : '<p style="color:var(--text-muted)">No ticker analysis available.</p>';
+            
+            document.getElementById('ticker-analysis-table').innerHTML = tickerAnalysisHtml;
 
             // ==================== MULTI-LEG STRATEGY DETECTION ====================
             // Group ML/ trades by symbol + timestamp (same second = same strategy)
@@ -5274,12 +5663,12 @@
                         
                         strategy = {
                             name: 'Iron Condor',
-                            type: 'income',
+                            type: 'neutral',
                             bias: 'neutral',
                             isCredit: isCredit,
                             netAmount: netAmount,
                             description: `${putStrikes[0]}/${putStrikes[1]} puts, ${callStrikes[0]}/${callStrikes[1]} calls`,
-                            education: `<strong>Iron Condor:</strong> A popular income strategy betting ${group.symbol} stays in a range. You sell an OTM put spread and an OTM call spread. <strong>Max profit</strong> is the credit received if stock stays between $${putStrikes[1]} and $${callStrikes[0]} at expiration. <strong>Max loss</strong> is limited to the spread width minus credit.`,
+                            education: `<strong>Iron Condor:</strong> A popular neutral strategy betting ${group.symbol} stays in a range. You sell an OTM put spread and an OTM call spread. <strong>Max profit</strong> is the credit received if stock stays between $${putStrikes[1]} and $${callStrikes[0]} at expiration. <strong>Max loss</strong> is limited to the spread width minus credit.`,
                             maxProfit: fmt(netAmount),
                             maxLoss: fmt((Math.max(callStrikes[1] - callStrikes[0], putStrikes[1] - putStrikes[0]) * 100 * legs[0].Volume) - netAmount),
                             breakeven: `$${putStrikes[1]} / $${callStrikes[0]} ± credit`
@@ -5292,7 +5681,7 @@
                         if (allStrikes[1] === allStrikes[2]) {
                             strategy = {
                                 name: 'Iron Butterfly',
-                                type: 'income',
+                                type: 'neutral',
                                 bias: 'neutral',
                                 isCredit: isCredit,
                                 netAmount: netAmount,
@@ -5873,7 +6262,7 @@
             
             // Clone other sections and remove collapsed state
             const sections = ['golden-sweeps-section', 'multi-leg-section', 'correlated-signals-section', 'high-conviction-section', 'large-trades-section', 
-                            'greeks-section', 'expiration-heatmap-section', 'unusual-section'];
+                            'greeks-section', 'expiration-heatmap-section', 'ticker-analysis-section', 'unusual-section'];
             const clonedSections = {};
             sections.forEach(id => {
                 const el = document.getElementById(id);
@@ -5954,7 +6343,7 @@ h1{font-size:1.5rem;font-weight:700;margin-bottom:0.25rem}
 .strategy-name.bullish{background:rgba(63,185,80,0.15);color:var(--accent-bullish)}
 .strategy-name.bearish{background:rgba(248,81,73,0.15);color:var(--accent-bearish)}
 .strategy-name.neutral{background:rgba(88,166,255,0.15);color:var(--accent-info)}
-.strategy-name.income{background:rgba(163,113,247,0.15);color:var(--accent-purple)}
+.strategy-name.volatility{background:rgba(210,153,34,0.15);color:var(--accent-warning)}
 .strategy-outlook{font-size:0.75rem;color:var(--text-muted);padding:0.2rem 0.5rem;background:var(--bg-card);border-radius:4px}
 .strategy-description{font-size:0.85rem;color:var(--text-secondary);line-height:1.5;margin-bottom:0.75rem}
 .strategy-metrics{display:flex;gap:1.5rem;flex-wrap:wrap}
