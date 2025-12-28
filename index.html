@@ -4016,84 +4016,127 @@
             
             // Daily sentiment calculation (only when ticker is filtered)
             if (filterTicker.value && filtered.length > 0) {
-                // Group by date
-                const byDate = {};
-                filtered.forEach(f => {
-                    const date = f.CreatedDate || 'Unknown';
-                    if (!byDate[date]) byDate[date] = { bullish: 0, bearish: 0 };
-                    
-                    // Determine if bullish or bearish
-                    const isBullish = (f.CallPut === 'CALL' && ['A','AA'].includes(f.Side)) || 
-                                     (f.CallPut === 'PUT' && ['B','BB'].includes(f.Side));
-                    const isBearish = (f.CallPut === 'PUT' && ['A','AA'].includes(f.Side)) || 
-                                     (f.CallPut === 'CALL' && ['B','BB'].includes(f.Side));
-                    
-                    if (isBullish) byDate[date].bullish += f.Premium;
-                    if (isBearish) byDate[date].bearish += f.Premium;
-                });
-                
-                // Sort dates chronologically
-                const sortedDates = Object.keys(byDate).sort((a, b) => {
-                    const dateA = new Date(a);
-                    const dateB = new Date(b);
-                    return dateA - dateB;
-                });
-                
-                // Only show if multiple dates
-                if (sortedDates.length >= 1) {
-                    let bullishDays = 0, bearishDays = 0;
-                    
-                    const flowItems = sortedDates.map(date => {
-                        const net = byDate[date].bullish - byDate[date].bearish;
-                        const isBullish = net > 0;
-                        if (isBullish) bullishDays++;
-                        else if (net < 0) bearishDays++;
-                        
-                        const arrow = isBullish ? '▲' : '▼';
-                        const color = isBullish ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
-                        const sign = net >= 0 ? '+' : '';
-                        
-                        // Format date nicely (e.g., "Dec 18")
-                        const dateObj = new Date(date);
-                        const formatted = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        
-                        return `<span class="daily-sentiment-item">
-                            <span style="color:var(--text-muted)">${formatted}</span>
-                            <span style="color:${color}">${arrow}${sign}${fmt(net)}</span>
-                        </span>`;
-                    }).join('<span class="daily-sentiment-arrow">→</span>');
-                    
-                    // Consistency indicator
-                    const totalDays = sortedDates.length;
-                    let consistencyClass, consistencyText;
-                    
-                    if (bullishDays === totalDays) {
-                        consistencyClass = 'bullish';
-                        consistencyText = `${bullishDays}/${totalDays} Bullish ✓`;
-                    } else if (bearishDays === totalDays) {
-                        consistencyClass = 'bearish';
-                        consistencyText = `${bearishDays}/${totalDays} Bearish ✓`;
+                // Try to fetch historical sentiment from database first
+                fetchTickerDailySentiment(filterTicker.value).then(dbSentiment => {
+                    if (dbSentiment && dbSentiment.length > 0) {
+                        // Use database sentiment (more complete history)
+                        displayDailySentiment(filterTicker.value, dbSentiment);
                     } else {
-                        consistencyClass = 'mixed';
-                        consistencyText = `Mixed (${bullishDays}▲ ${bearishDays}▼)`;
+                        // Fall back to calculating from current flows
+                        const localSentiment = calculateLocalSentiment(filtered);
+                        displayDailySentiment(filterTicker.value, localSentiment);
                     }
-                    
-                    dailySentiment.innerHTML = `
-                        <div class="daily-sentiment-label">${filterTicker.value} Daily Sentiment</div>
-                        <div class="daily-sentiment-flow">
-                            ${flowItems}
-                            <span class="daily-sentiment-consistency ${consistencyClass}">${consistencyText}</span>
-                        </div>
-                    `;
-                    dailySentiment.classList.add('visible');
-                } else {
-                    dailySentiment.classList.remove('visible');
-                }
+                }).catch(err => {
+                    console.log('DB sentiment fetch skipped:', err.message);
+                    // Fall back to local calculation
+                    const localSentiment = calculateLocalSentiment(filtered);
+                    displayDailySentiment(filterTicker.value, localSentiment);
+                });
             } else {
                 dailySentiment.classList.remove('visible');
             }
             
             analyze(filtered, filterHighConviction.checked, filterUniqueTickers.checked, filterRequireBlocks.checked);
+        }
+        
+        // Fetch historical daily sentiment for a ticker from Supabase
+        async function fetchTickerDailySentiment(ticker, days = 7) {
+            const client = await initSupabase();
+            if (!client) return null;
+            
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - days);
+            const startDateStr = startDate.toISOString().split('T')[0];
+            
+            const { data, error } = await client
+                .from('daily_sentiment')
+                .select('flow_date, bullish_premium, bearish_premium')
+                .eq('symbol', ticker)
+                .gte('flow_date', startDateStr)
+                .order('flow_date', { ascending: true });
+            
+            if (error || !data) return null;
+            
+            return data.map(d => ({
+                date: d.flow_date,
+                bullish: d.bullish_premium,
+                bearish: d.bearish_premium
+            }));
+        }
+        
+        // Calculate sentiment from local filtered flows
+        function calculateLocalSentiment(flows) {
+            const byDate = {};
+            flows.forEach(f => {
+                const date = f.CreatedDate || 'Unknown';
+                if (!byDate[date]) byDate[date] = { bullish: 0, bearish: 0 };
+                
+                const isBullish = (f.CallPut === 'CALL' && ['A','AA'].includes(f.Side)) || 
+                                 (f.CallPut === 'PUT' && ['B','BB'].includes(f.Side));
+                const isBearish = (f.CallPut === 'PUT' && ['A','AA'].includes(f.Side)) || 
+                                 (f.CallPut === 'CALL' && ['B','BB'].includes(f.Side));
+                
+                if (isBullish) byDate[date].bullish += f.Premium;
+                if (isBearish) byDate[date].bearish += f.Premium;
+            });
+            
+            return Object.keys(byDate)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map(date => ({ date, ...byDate[date] }));
+        }
+        
+        // Display daily sentiment UI
+        function displayDailySentiment(ticker, sentimentData) {
+            if (!sentimentData || sentimentData.length === 0) {
+                dailySentiment.classList.remove('visible');
+                return;
+            }
+            
+            let bullishDays = 0, bearishDays = 0;
+            
+            const flowItems = sentimentData.map(d => {
+                const net = d.bullish - d.bearish;
+                const isBullish = net > 0;
+                if (isBullish) bullishDays++;
+                else if (net < 0) bearishDays++;
+                
+                const arrow = isBullish ? '▲' : '▼';
+                const color = isBullish ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
+                const sign = net >= 0 ? '+' : '';
+                
+                // Format date nicely (e.g., "Dec 18")
+                const dateObj = new Date(d.date);
+                const formatted = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                return `<span class="daily-sentiment-item">
+                    <span style="color:var(--text-muted)">${formatted}</span>
+                    <span style="color:${color}">${arrow}${sign}${fmt(net)}</span>
+                </span>`;
+            }).join('<span class="daily-sentiment-arrow">→</span>');
+            
+            // Consistency indicator
+            const totalDays = sentimentData.length;
+            let consistencyClass, consistencyText;
+            
+            if (bullishDays === totalDays) {
+                consistencyClass = 'bullish';
+                consistencyText = `${bullishDays}/${totalDays} Bullish ✓`;
+            } else if (bearishDays === totalDays) {
+                consistencyClass = 'bearish';
+                consistencyText = `${bearishDays}/${totalDays} Bearish ✓`;
+            } else {
+                consistencyClass = 'mixed';
+                consistencyText = `Mixed (${bullishDays}▲ ${bearishDays}▼)`;
+            }
+            
+            dailySentiment.innerHTML = `
+                <div class="daily-sentiment-label">${ticker} Daily Sentiment</div>
+                <div class="daily-sentiment-flow">
+                    ${flowItems}
+                    <span class="daily-sentiment-consistency ${consistencyClass}">${consistencyText}</span>
+                </div>
+            `;
+            dailySentiment.classList.add('visible');
         }
 
         function populateFilters(flows) {
