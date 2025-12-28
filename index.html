@@ -1245,6 +1245,16 @@
             transition: border-color 0.2s ease;
         }
 
+        .filter-select::placeholder {
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        input.filter-select {
+            cursor: text;
+            text-transform: uppercase;
+        }
+
         .filter-select:hover {
             border-color: var(--border-highlight);
         }
@@ -1914,9 +1924,8 @@
                     </div>
                     <div class="filter-group" style="min-width:140px">
                         <label class="filter-label">Ticker</label>
-                        <select class="filter-select" id="hist-filter-ticker">
-                            <option value="">All Tickers</option>
-                        </select>
+                        <input type="text" class="filter-select" id="hist-filter-ticker" list="hist-ticker-list" placeholder="All Tickers" autocomplete="off">
+                        <datalist id="hist-ticker-list"></datalist>
                     </div>
                     <div class="filter-group" style="min-width:120px">
                         <label class="filter-label">Expiration</label>
@@ -1968,9 +1977,8 @@
         <div class="filters" id="filters">
             <div class="filter-group">
                 <label class="filter-label">Ticker</label>
-                <select class="filter-select" id="filter-ticker">
-                    <option value="">All Tickers</option>
-                </select>
+                <input type="text" class="filter-select" id="filter-ticker" list="ticker-list" placeholder="All Tickers" autocomplete="off">
+                <datalist id="ticker-list"></datalist>
             </div>
             <div class="filter-group">
                 <label class="filter-label">Security</label>
@@ -3141,6 +3149,19 @@
         const filterCount = document.getElementById('filter-count');
         const dailySentiment = document.getElementById('daily-sentiment');
         
+        // Utility: Debounce function for input events
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
         // AlertStream elements
         const alertUploadZone = document.getElementById('alert-upload-zone');
         const alertFileInput = document.getElementById('alert-file-input');
@@ -3379,8 +3400,9 @@
                 
                 if (tickerData && tickerData.length > 0) {
                     const uniqueTickers = [...new Set(tickerData.map(t => t.symbol))].sort();
-                    histFilterTicker.innerHTML = '<option value="">All Tickers</option>' + 
-                        uniqueTickers.map(t => `<option value="${t}">${t}</option>`).join('');
+                    const histTickerList = document.getElementById('hist-ticker-list');
+                    histTickerList.innerHTML = uniqueTickers.map(t => `<option value="${t}">`).join('');
+                    window.availableHistTickers = uniqueTickers;
                 }
             } catch (err) {
                 console.error('Error loading dates:', err);
@@ -3729,7 +3751,21 @@
         
         // Auto-refresh trends when historical filters change
         histFilterSecurity.addEventListener('change', () => loadTrends());
-        histFilterTicker.addEventListener('change', () => loadTrends());
+        // Use input event with debounce for historical ticker typing
+        const debouncedHistTickerFilter = debounce(() => {
+            const tickerVal = histFilterTicker.value.toUpperCase().trim();
+            // Only trigger if valid ticker or empty
+            if (!tickerVal || (window.availableHistTickers && window.availableHistTickers.includes(tickerVal))) {
+                loadTrends();
+            }
+        }, 300);
+        histFilterTicker.addEventListener('input', debouncedHistTickerFilter);
+        histFilterTicker.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                loadTrends();
+            }
+        });
         histFilterDte.addEventListener('change', () => loadTrends());
         histFilterDirection.addEventListener('change', () => loadTrends());
         
@@ -3930,10 +3966,23 @@
         }
 
         // Filter event listeners
-        filterTicker.addEventListener('change', () => {
+        // Use input event with debounce for ticker typing
+        const debouncedTickerFilter = debounce(() => {
             applyFilters();
-            // Also reload trends filtered by this ticker
-            loadTrends(filterTicker.value);
+            // Also reload trends filtered by this ticker (only if valid ticker or empty)
+            const tickerVal = filterTicker.value.toUpperCase().trim();
+            if (!tickerVal || (window.availableTickers && window.availableTickers.includes(tickerVal))) {
+                loadTrends(tickerVal);
+            }
+        }, 300);
+        filterTicker.addEventListener('input', debouncedTickerFilter);
+        // Also trigger on Enter key
+        filterTicker.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyFilters();
+                loadTrends(filterTicker.value.toUpperCase().trim());
+            }
         });
         filterSecurity.addEventListener('change', applyFilters);
         filterDte.addEventListener('change', applyFilters);
@@ -3971,8 +4020,17 @@
         function applyFilters() {
             let filtered = [...allFlows];
             
+            // Ticker filter - support exact match or partial match (case-insensitive)
             if (filterTicker.value) {
-                filtered = filtered.filter(f => f.Symbol === filterTicker.value);
+                const tickerVal = filterTicker.value.toUpperCase().trim();
+                // Check if exact match exists
+                const exactMatch = filtered.some(f => f.Symbol === tickerVal);
+                if (exactMatch) {
+                    filtered = filtered.filter(f => f.Symbol === tickerVal);
+                } else {
+                    // Partial match
+                    filtered = filtered.filter(f => f.Symbol.includes(tickerVal));
+                }
             }
             if (filterSecurity.value) {
                 filtered = filtered.filter(f => f.StockEtf === filterSecurity.value);
@@ -4142,8 +4200,13 @@
         function populateFilters(flows) {
             // Get unique tickers sorted alphabetically
             const tickers = [...new Set(flows.map(f => f.Symbol))].sort();
-            filterTicker.innerHTML = '<option value="">All Tickers</option>' + 
-                tickers.map(t => `<option value="${t}">${t}</option>`).join('');
+            
+            // Populate main ticker datalist
+            const tickerList = document.getElementById('ticker-list');
+            tickerList.innerHTML = tickers.map(t => `<option value="${t}">`).join('');
+            
+            // Store tickers for validation
+            window.availableTickers = tickers;
             
             filterCount.innerHTML = `Showing <span>${flows.length}</span> of <span>${flows.length}</span> trades`;
         }
