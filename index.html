@@ -1742,9 +1742,15 @@
 
         .upload-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 1rem;
             margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .upload-row {
+                grid-template-columns: 1fr;
+            }
         }
 
         .upload-zone.secondary {
@@ -1768,6 +1774,29 @@
         .upload-zone.loaded {
             border-color: var(--accent-bullish);
             border-style: solid;
+        }
+
+        .volume-confirmation {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            background: rgba(163, 113, 247, 0.15);
+            color: var(--accent-purple);
+            margin-right: 0.25rem;
+        }
+
+        .volume-confirmation.bullish {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--accent-bullish);
+        }
+
+        .volume-confirmation.bearish {
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--accent-bearish);
         }
 
         .earnings-badge {
@@ -1877,6 +1906,18 @@
                 <div class="file-info" id="alert-file-info">
                     <span class="file-name" id="alert-file-name"></span>
                     <span class="file-size" id="alert-file-size"></span>
+                </div>
+            </div>
+            <div class="upload-zone secondary" id="volume-upload-zone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h3>Volume Scanner CSV (Optional)</h3>
+                <p>Options volume & OI changes</p>
+                <input type="file" id="volume-file-input" accept=".csv">
+                <div class="file-info" id="volume-file-info">
+                    <span class="file-name" id="volume-file-name"></span>
+                    <span class="file-size" id="volume-file-size"></span>
                 </div>
             </div>
         </div>
@@ -2036,6 +2077,10 @@
             <div class="filter-toggle">
                 <input type="checkbox" id="filter-exclude-itm">
                 <label for="filter-exclude-itm">Exclude ITM</label>
+            </div>
+            <div class="filter-toggle">
+                <input type="checkbox" id="filter-exclude-megacaps">
+                <label for="filter-exclude-megacaps" style="color:var(--accent-purple)">Exclude Mega-Caps</label>
             </div>
             <div class="filter-toggle">
                 <input type="checkbox" id="filter-unique-tickers">
@@ -2218,6 +2263,22 @@
                         McMillan-style analysis: P/C Ratio (>0.7 bearish, <0.5 bullish), Vol/OI Ratio (>1.25 unusual activity), DTE zones for time decay.
                     </p>
                     <div id="ticker-analysis-table"></div>
+                </div>
+            </div>
+
+            <div class="section collapsed" id="volume-scanner-section">
+                <div class="section-header" onclick="toggleSection('volume-scanner-section')">
+                    <div class="section-icon" style="background: rgba(163, 113, 247, 0.15); color: var(--accent-purple);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="section-title">Volume Scanner</span>
+                    <span class="section-badge" id="volume-scanner-count">0</span>
+                    <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="section-content" id="volume-scanner-content">
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">Upload OptionsVolume.csv to see tickers with unusual volume relative to 10-day average. Higher RATIO = more unusual activity.</p>
                 </div>
             </div>
 
@@ -3142,12 +3203,29 @@
         const filterPremium = document.getElementById('filter-premium');
         const filterPrice = document.getElementById('filter-price');
         const filterExcludeItm = document.getElementById('filter-exclude-itm');
+        const filterExcludeMegacaps = document.getElementById('filter-exclude-megacaps');
         const filterUniqueTickers = document.getElementById('filter-unique-tickers');
         const filterRequireBlocks = document.getElementById('filter-require-blocks');
         const filterHighConviction = document.getElementById('filter-high-conviction');
         const filterReset = document.getElementById('filter-reset');
         const filterCount = document.getElementById('filter-count');
         const dailySentiment = document.getElementById('daily-sentiment');
+        
+        // Mega-cap tickers to exclude (Mag 7 + major indices/ETFs + other mega-caps)
+        const MEGACAP_TICKERS = [
+            // Magnificent 7
+            'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA',
+            // Other mega-caps
+            'BRK.A', 'BRK.B', 'BRKB', 'JPM', 'V', 'JNJ', 'WMT', 'MA', 'PG', 'HD', 'UNH',
+            'XOM', 'CVX', 'LLY', 'ABBV', 'MRK', 'PFE', 'COST', 'AVGO', 'PEP', 'KO',
+            'TMO', 'MCD', 'CSCO', 'ACN', 'ABT', 'DHR', 'NKE', 'TXN', 'NEE', 'PM',
+            'ORCL', 'CRM', 'AMD', 'INTC', 'QCOM', 'IBM', 'ADBE', 'NFLX', 'PYPL',
+            // Major ETFs
+            'SPY', 'QQQ', 'IWM', 'DIA', 'VTI', 'VOO', 'IVV', 'VXX', 'UVXY', 'SQQQ', 'TQQQ',
+            'XLF', 'XLE', 'XLK', 'XLV', 'XLI', 'XLP', 'XLU', 'XLB', 'XLY', 'XLRE',
+            'GLD', 'SLV', 'USO', 'TLT', 'HYG', 'LQD', 'EEM', 'EFA', 'VEA', 'VWO',
+            'ARKK', 'ARKG', 'ARKF', 'ARKW', 'SMH', 'SOXX', 'XBI', 'IBB', 'KRE', 'XHB'
+        ];
         
         // Utility: Debounce function for input events
         function debounce(func, wait) {
@@ -3169,10 +3247,18 @@
         const alertFileName = document.getElementById('alert-file-name');
         const alertFileSize = document.getElementById('alert-file-size');
         
+        // Volume Scanner elements
+        const volumeUploadZone = document.getElementById('volume-upload-zone');
+        const volumeFileInput = document.getElementById('volume-file-input');
+        const volumeFileInfo = document.getElementById('volume-file-info');
+        const volumeFileName = document.getElementById('volume-file-name');
+        const volumeFileSize = document.getElementById('volume-file-size');
+        
         let currentFileName = '';
         let allFlows = []; // Store all flows for filtering
         let allMultiLegStrategies = []; // Store all multi-leg strategies for filtering
         let alertStreamData = { darkPool: {}, blocks: {}, insider: {}, earnings: {}, sector: {}, weekHigh: {}, weekLow: {}, orb: {}, priceSpike: {}, halted: {}, volumeAlert: {} }; // Store AlertStream data by ticker
+        let volumeScannerData = {}; // Store Volume Scanner data by ticker
         let livePrices = {}; // Store live prices by ticker
         let pricePollingInterval = null; // For REST API polling
         let isPolling = false; // Polling state
@@ -3965,6 +4051,115 @@
             });
         }
 
+        // Volume Scanner upload handlers
+        volumeUploadZone.addEventListener('click', () => volumeFileInput.click());
+        volumeUploadZone.addEventListener('dragover', (e) => { e.preventDefault(); volumeUploadZone.classList.add('drag-over'); });
+        volumeUploadZone.addEventListener('dragleave', () => volumeUploadZone.classList.remove('drag-over'));
+        volumeUploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            volumeUploadZone.classList.remove('drag-over');
+            if (e.dataTransfer.files[0]?.name.endsWith('.csv')) processVolumeFile(e.dataTransfer.files[0]);
+        });
+        volumeFileInput.addEventListener('change', (e) => { if (e.target.files[0]) processVolumeFile(e.target.files[0]); });
+
+        function processVolumeFile(file) {
+            volumeFileName.textContent = file.name;
+            volumeFileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+            volumeFileInfo.classList.add('visible');
+            volumeUploadZone.classList.add('loaded');
+            
+            Papa.parse(file, {
+                header: true,
+                complete: (r) => {
+                    volumeScannerData = {};
+                    
+                    r.data.forEach(row => {
+                        if (!row.SYMBOL) return;
+                        const ticker = row.SYMBOL.toUpperCase();
+                        
+                        // Parse volume scanner data
+                        const vol = parseInt(row.VOL) || 0;
+                        const cVol = parseInt(row['C VOL']) || 0;
+                        const pVol = parseInt(row['P VOL']) || 0;
+                        const pc = parseFloat(row['P/C']) || 0;
+                        const avgVol = parseInt(row['AVG VOL']) || 0;
+                        const ratio = parseFloat(row.RATIO) || 0;
+                        const coi = parseInt(row.COI) || 0;
+                        const poi = parseInt(row.POI) || 0;
+                        const dcoi = parseInt(row.DCOI) || 0;
+                        const dpoi = parseInt(row.DPOI) || 0;
+                        
+                        // Determine direction bias
+                        let direction = 'neutral';
+                        if (pc < 0.5 && cVol > pVol * 2) direction = 'bullish';
+                        else if (pc > 2 && pVol > cVol * 2) direction = 'bearish';
+                        else if (pc < 0.8) direction = 'leaning_bullish';
+                        else if (pc > 1.2) direction = 'leaning_bearish';
+                        
+                        volumeScannerData[ticker] = {
+                            vol, cVol, pVol, pc, avgVol, ratio,
+                            coi, poi, dcoi, dpoi, direction
+                        };
+                    });
+                    
+                    console.log(`Loaded volume data for ${Object.keys(volumeScannerData).length} tickers`);
+                    
+                    // Re-analyze if we already have flow data
+                    if (allFlows.length > 0) {
+                        applyFilters();
+                    }
+                }
+            });
+        }
+        
+        // Helper function to get volume confirmation HTML for a ticker
+        function getVolumeConfirmation(ticker, flowDirection) {
+            const vol = volumeScannerData[ticker];
+            if (!vol) return '';
+            
+            let html = '';
+            
+            // Only show if RATIO is significant (> 1.5x)
+            if (vol.ratio >= 1.5) {
+                // Determine if volume direction confirms or contradicts flow direction
+                let confirmClass = '';
+                let confirmIcon = '📊';
+                
+                const volIsBullish = vol.direction === 'bullish' || vol.direction === 'leaning_bullish';
+                const volIsBearish = vol.direction === 'bearish' || vol.direction === 'leaning_bearish';
+                const flowIsBullish = flowDirection === 'bullish' || flowDirection === 'CALL';
+                const flowIsBearish = flowDirection === 'bearish' || flowDirection === 'PUT';
+                
+                if ((volIsBullish && flowIsBullish) || (volIsBearish && flowIsBearish)) {
+                    confirmClass = volIsBullish ? 'bullish' : 'bearish';
+                    confirmIcon = '✓';
+                } else if ((volIsBullish && flowIsBearish) || (volIsBearish && flowIsBullish)) {
+                    confirmClass = ''; // Contradiction - show in neutral purple
+                    confirmIcon = '⚠';
+                }
+                
+                html += `<span class="volume-confirmation ${confirmClass}" title="Volume RATIO: ${vol.ratio}x avg">${confirmIcon} ${vol.ratio.toFixed(1)}x Vol</span>`;
+            }
+            
+            // Show P/C if extreme
+            if (vol.pc !== 0) {
+                if (vol.pc < 0.3 || vol.pc > 3) {
+                    const pcClass = vol.pc < 0.5 ? 'bullish' : vol.pc > 2 ? 'bearish' : '';
+                    html += `<span class="volume-confirmation ${pcClass}" title="Put/Call Ratio">P/C ${vol.pc.toFixed(1)}</span>`;
+                }
+            }
+            
+            // Show OI changes if significant
+            const oiChange = vol.dcoi + vol.dpoi;
+            if (Math.abs(vol.dcoi) > 500 || Math.abs(vol.dpoi) > 500) {
+                const oiClass = vol.dcoi > 0 ? 'bullish' : vol.dpoi > 0 ? 'bearish' : '';
+                const oiSign = vol.dcoi > 0 ? '+' : '';
+                html += `<span class="volume-confirmation ${oiClass}" title="Call OI change: ${vol.dcoi}, Put OI change: ${vol.dpoi}">ΔOI ${oiSign}${(vol.dcoi/1000).toFixed(1)}K</span>`;
+            }
+            
+            return html;
+        }
+
         // Filter event listeners
         // Use input event with debounce for ticker typing
         const debouncedTickerFilter = debounce(() => {
@@ -3991,6 +4186,7 @@
         filterPremium.addEventListener('change', applyFilters);
         filterPrice.addEventListener('change', applyFilters);
         filterExcludeItm.addEventListener('change', applyFilters);
+        filterExcludeMegacaps.addEventListener('change', applyFilters);
         filterUniqueTickers.addEventListener('change', applyFilters);
         filterRequireBlocks.addEventListener('change', applyFilters);
         filterHighConviction.addEventListener('change', applyFilters);
@@ -4009,6 +4205,7 @@
             filterPremium.value = '';
             filterPrice.value = '';
             filterExcludeItm.checked = false;
+            filterExcludeMegacaps.checked = false;
             filterUniqueTickers.checked = false;
             filterRequireBlocks.checked = false;
             filterHighConviction.checked = false;
@@ -4069,8 +4266,11 @@
                     return true;
                 });
             }
+            if (filterExcludeMegacaps.checked) {
+                filtered = filtered.filter(f => !MEGACAP_TICKERS.includes(f.Symbol));
+            }
             
-            filterCount.innerHTML = `Showing <span>${filtered.length}</span> of <span>${allFlows.length}</span> trades`;
+            filterCount.innerHTML = `Showing <span>${filtered.length}</span> of <span>${allFlows.length}</span> trades${filterExcludeMegacaps.checked ? ' <span style="color:var(--accent-purple)">(excl. mega-caps)</span>' : ''}`;
             
             // Daily sentiment calculation (only when ticker is filtered)
             if (filterTicker.value && filtered.length > 0) {
@@ -4710,6 +4910,7 @@
                 const bl = c.trades.filter(t => t.Type === 'BLOCK').length;
                 const earningsBadge = getEarningsBadge(c.symbol);
                 const livePriceInfo = getLivePriceInfo(c.symbol, avgSpot, dir);
+                const volumeConfirm = getVolumeConfirmation(c.symbol, dir);
                 
                 // Get the best trade (highest premium) for tracking
                 const bestTrade = c.trades.reduce((best, t) => t.Premium > best.Premium ? t : best, c.trades[0]);
@@ -4762,6 +4963,7 @@
                             <span class="direction-badge ${dir}">${c.cp}</span>
                             ${earningsBadge}
                             ${livePriceInfo.badge}
+                            ${volumeConfirm}
                         </div>
                         <div style="display:flex;align-items:center;gap:0.75rem">
                             <div class="flow-premium">
@@ -4820,6 +5022,7 @@
                 const avgSpot = c.trades.reduce((s,t) => s + t.Spot, 0) / c.trades.length;
                 const avgOI = Math.round(c.trades.reduce((s,t) => s + (t.OI || 0), 0) / c.trades.length);
                 const livePriceInfo = getLivePriceInfo(c.symbol, avgSpot, dir);
+                const volumeConfirm = getVolumeConfirmation(c.symbol, dir);
                 
                 // Get the best trade (highest premium) for tracking
                 const bestTrade = c.trades.reduce((best, t) => t.Premium > best.Premium ? t : best, c.trades[0]);
@@ -4875,13 +5078,14 @@
                 return `
                 <div class="cluster-item">
                     <div class="cluster-header" onclick="toggleCluster(${i})">
-                        <div style="display:flex;align-items:center;gap:0.75rem">
+                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
                             <svg id="chevron-${i}" style="width:14px;height:14px;stroke:var(--text-muted);transition:transform 0.2s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-muted)">${c.latestDate}</span>
                             <span class="ticker-symbol ticker-clickable" style="font-size:1rem">${c.symbol}</span>
                             <span class="direction-badge ${dir}" style="font-size:0.65rem">${c.cp}</span>
                             ${earningsBadge}
                             ${livePriceInfo.badge}
+                            ${volumeConfirm}
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-secondary)">$${c.strike} · ${c.exp}</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:1rem">
@@ -4949,6 +5153,7 @@
                 const oiDot = ['YELLOW','MAGENTA'].includes(t.Color) ? `<span style="color:${t.Color==='YELLOW'?'var(--accent-warning)':'var(--accent-purple)'}">●</span>` : '<span style="color:var(--text-muted)">○</span>';
                 const earningsBadge = getEarningsBadge(t.Symbol);
                 const livePriceInfo = getLivePriceInfo(t.Symbol, t.Spot, dir);
+                const volumeConfirm = getVolumeConfirmation(t.Symbol, dir);
                 
                 // DTE Zone (McMillan-style time decay zones)
                 let dteZone, dteColor, dteIcon;
@@ -4988,6 +5193,7 @@
                             <span class="direction-badge ${dir}" style="font-size:0.65rem">${t.CallPut}</span>
                             ${earningsBadge}
                             ${livePriceInfo.badge}
+                            ${volumeConfirm}
                             <span style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--text-secondary)">$${t.Strike} · ${t.ExpirationDate}</span>
                             ${dteBadge}
                             ${volOiBadge}
@@ -5525,7 +5731,9 @@
                         avgIV,
                         ivLevel,
                         ivColor,
-                        ivIcon
+                        ivIcon,
+                        // Add volume scanner data if available
+                        volScanner: volumeScannerData[t.sym] || null
                     };
                 })
                 .sort((a, b) => b.prem - a.prem)
@@ -5535,7 +5743,7 @@
             
             const tickerAnalysisHtml = tickerAnalysis.length ? `
                 <div style="overflow-x:auto">
-                    <table class="summary-table" style="min-width:900px">
+                    <table class="summary-table" style="min-width:1000px">
                         <thead>
                             <tr>
                                 <th>Ticker</th>
@@ -5545,6 +5753,7 @@
                                 <th style="text-align:center">Vol/OI</th>
                                 <th style="text-align:center">Avg IV</th>
                                 <th style="text-align:center">Avg DTE</th>
+                                <th style="text-align:center">Vol Scanner</th>
                                 <th>Trades</th>
                             </tr>
                         </thead>
@@ -5556,6 +5765,19 @@
                                 const pcIcon = t.pcSentiment === 'bullish' ? '📈' : t.pcSentiment === 'bearish' ? '📉' : '➡️';
                                 const volOiColor = t.isUnusual ? 'var(--accent-warning)' : 'var(--text-secondary)';
                                 const volOiBg = t.isUnusual ? 'rgba(210, 153, 34, 0.15)' : 'transparent';
+                                
+                                // Volume Scanner column
+                                let volScannerHtml = '<span style="color:var(--text-muted)">-</span>';
+                                if (t.volScanner) {
+                                    const vs = t.volScanner;
+                                    const ratioColor = vs.ratio >= 3 ? 'var(--accent-warning)' : vs.ratio >= 2 ? 'var(--accent-purple)' : 'var(--accent-info)';
+                                    const dirIcon = vs.direction === 'bullish' ? '📈' : vs.direction === 'bearish' ? '📉' : vs.direction === 'leaning_bullish' ? '↗' : vs.direction === 'leaning_bearish' ? '↘' : '➡️';
+                                    const dirColor = vs.direction.includes('bullish') ? 'var(--accent-bullish)' : vs.direction.includes('bearish') ? 'var(--accent-bearish)' : 'var(--text-secondary)';
+                                    volScannerHtml = `<span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem">
+                                        <span style="color:${ratioColor};font-weight:600">${vs.ratio.toFixed(1)}x</span>
+                                        <span style="color:${dirColor};margin-left:0.25rem">${dirIcon}</span>
+                                    </span>`;
+                                }
                                 
                                 return `<tr>
                                     <td class="ticker ticker-clickable">${t.sym}</td>
@@ -5581,6 +5803,7 @@
                                             ${t.dteIcon} ${t.avgDte}d
                                         </span>
                                     </td>
+                                    <td style="text-align:center">${volScannerHtml}</td>
                                     <td style="color:var(--text-muted)">${t.n}</td>
                                 </tr>`;
                             }).join('')}
@@ -5592,7 +5815,7 @@
                         <div><strong>P/C Ratio:</strong> 📈 <0.5 Bullish | ➡️ 0.5-0.7 Neutral | 📉 >0.7 Bearish</div>
                         <div><strong>Vol/OI:</strong> >1.25 = 🔥 Unusual Activity</div>
                         <div><strong>Avg IV:</strong> 🔵 <30% Low | 🟢 30-50% Normal | 🟠 50-80% High | 🔴 >80% Very High</div>
-                        <div><strong>DTE Zone:</strong> 🔥 0-7d Decay | ⚡ 8-21d Fast | ✅ 22-45d Sweet Spot | 📅 45d+ LEAPS</div>
+                        <div><strong>Vol Scanner:</strong> RATIO = today's vol ÷ 10-day avg</div>
                     </div>
                 </div>
             ` : '<p style="color:var(--text-muted)">No ticker analysis available.</p>';
@@ -6180,6 +6403,89 @@
                     ${uRows}
                 </div></div>` : '<p style="color:var(--text-muted)">No unusual activity matching criteria ($100K+ AND aggressive/OI exceeded).</p>';
             document.getElementById('unusual-activity').innerHTML = uHtml;
+            
+            // ==================== VOLUME SCANNER SECTION ====================
+            renderVolumeScanner(flows);
+        }
+        
+        function renderVolumeScanner(flows) {
+            const volData = Object.entries(volumeScannerData);
+            if (volData.length === 0) {
+                document.getElementById('volume-scanner-count').textContent = '0';
+                document.getElementById('volume-scanner-content').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Upload OptionsVolume.csv to see tickers with unusual volume relative to 10-day average.</p>';
+                return;
+            }
+            
+            // Get tickers that appear in flow data for cross-reference
+            const flowTickers = new Set(flows.map(f => f.Symbol));
+            
+            // Sort by RATIO descending, filter to RATIO >= 1.5
+            const sorted = volData
+                .filter(([ticker, data]) => data.ratio >= 1.5)
+                .sort((a, b) => b[1].ratio - a[1].ratio)
+                .slice(0, 30);
+            
+            document.getElementById('volume-scanner-count').textContent = sorted.length;
+            
+            if (sorted.length === 0) {
+                document.getElementById('volume-scanner-content').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">No tickers with RATIO >= 1.5x in volume data.</p>';
+                return;
+            }
+            
+            const rows = sorted.map(([ticker, v]) => {
+                // Determine direction and styling
+                let dirClass = '';
+                let dirLabel = 'NEUTRAL';
+                if (v.direction === 'bullish') { dirClass = 'bullish'; dirLabel = 'BULLISH'; }
+                else if (v.direction === 'leaning_bullish') { dirClass = 'bullish'; dirLabel = '↗ LEAN BULL'; }
+                else if (v.direction === 'bearish') { dirClass = 'bearish'; dirLabel = 'BEARISH'; }
+                else if (v.direction === 'leaning_bearish') { dirClass = 'bearish'; dirLabel = '↘ LEAN BEAR'; }
+                
+                // Check if in flow data
+                const inFlow = flowTickers.has(ticker);
+                const flowBadge = inFlow ? '<span style="color:var(--accent-info);font-size:0.6rem;margin-left:0.25rem">●</span>' : '';
+                
+                // OI change indicators
+                const dcoiColor = v.dcoi > 0 ? 'var(--accent-bullish)' : v.dcoi < 0 ? 'var(--accent-bearish)' : 'var(--text-muted)';
+                const dpoiColor = v.dpoi > 0 ? 'var(--accent-bearish)' : v.dpoi < 0 ? 'var(--accent-bullish)' : 'var(--text-muted)';
+                const dcoiSign = v.dcoi > 0 ? '+' : '';
+                const dpoiSign = v.dpoi > 0 ? '+' : '';
+                
+                // RATIO heat coloring
+                let ratioColor = 'var(--text-secondary)';
+                if (v.ratio >= 5) ratioColor = 'var(--accent-warning)';
+                else if (v.ratio >= 3) ratioColor = 'var(--accent-purple)';
+                else if (v.ratio >= 2) ratioColor = 'var(--accent-info)';
+                
+                return `<div style="display:grid;grid-template-columns:80px 60px 80px 80px 70px 75px 75px 90px 90px;gap:0.5rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap;border-left:3px solid ${dirClass === 'bullish' ? 'var(--accent-bullish)' : dirClass === 'bearish' ? 'var(--accent-bearish)' : 'var(--border-color)'}">
+                    <span class="ticker-clickable" style="font-weight:600;color:var(--text-primary)">${ticker}${flowBadge}</span>
+                    <span style="color:${ratioColor};font-weight:600">${v.ratio.toFixed(1)}x</span>
+                    <span class="direction-badge ${dirClass}" style="font-size:0.6rem;padding:0.15rem 0.35rem">${dirLabel}</span>
+                    <span style="color:var(--text-secondary)">P/C ${v.pc.toFixed(2)}</span>
+                    <span style="color:var(--text-muted)">${num(v.vol)}</span>
+                    <span style="color:${dcoiColor}">${dcoiSign}${num(v.dcoi)}</span>
+                    <span style="color:${dpoiColor}">${dpoiSign}${num(v.dpoi)}</span>
+                    <span style="color:var(--accent-bullish);font-size:0.7rem">${num(v.cVol)} calls</span>
+                    <span style="color:var(--accent-bearish);font-size:0.7rem">${num(v.pVol)} puts</span>
+                </div>`;
+            }).join('');
+            
+            const html = `
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">
+                    Tickers with unusual options volume (RATIO ≥ 1.5x avg). 
+                    <span style="color:var(--accent-info)">● = Also in flow data</span>
+                </p>
+                <div style="overflow-x:auto"><div style="min-width:780px">
+                    <div style="display:grid;grid-template-columns:80px 60px 80px 80px 70px 75px 75px 90px 90px;gap:0.5rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
+                        <span>Symbol</span><span>RATIO</span><span>Direction</span><span>P/C</span><span>Volume</span><span>ΔCOI</span><span>ΔPOI</span><span>Call Vol</span><span>Put Vol</span>
+                    </div>
+                    ${rows}
+                </div></div>
+                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.75rem">
+                    <strong>RATIO:</strong> Today's vol ÷ 10-day avg &nbsp;|&nbsp; 
+                    <strong>ΔCOI/ΔPOI:</strong> Change in Open Interest (+ = new positions)
+                </p>`;
+            document.getElementById('volume-scanner-content').innerHTML = html;
         }
 
         // ==================== MASSIVE.COM REST API POLLING ====================
