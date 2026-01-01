@@ -1974,6 +1974,7 @@
                             <option value="">All DTE</option>
                             <option value="0">0DTE Only</option>
                             <option value="7">≤ 7 days (Weekly)</option>
+                            <option value="15-45">15-45 days (Sweet Spot)</option>
                             <option value="30">≤ 30 days (Monthly)</option>
                             <option value="90">≤ 90 days (Quarterly)</option>
                             <option value="365">≤ 365 days (Long-dated)</option>
@@ -2033,10 +2034,12 @@
                 <label class="filter-label">Expiration</label>
                 <select class="filter-select" id="filter-dte">
                     <option value="">All DTE</option>
+                    <option value="7">≤ 7 days (Weeklies)</option>
+                    <option value="15-45">15-45 days (Sweet Spot)</option>
                     <option value="30">≤ 30 days</option>
                     <option value="60">31-60 days</option>
                     <option value="90">61-90 days</option>
-                    <option value="90+">90+ days</option>
+                    <option value="90+">90+ days (LEAPS)</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -2185,7 +2188,7 @@
                             <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <span class="section-title">High Conviction Flows</span>
+                    <span class="section-title">Conviction Flows</span>
                     <span class="section-badge" id="high-conviction-count">0</span>
                     <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
@@ -3055,6 +3058,102 @@
             }
         }
         
+        // Parse market cap string (e.g., "1.5B", "500M", "2.3T") to number
+        function parseMktCap(mktCapStr) {
+            if (!mktCapStr || typeof mktCapStr !== 'string') return 0;
+            const str = mktCapStr.toUpperCase().trim();
+            const num = parseFloat(str);
+            if (isNaN(num)) return 0;
+            
+            if (str.includes('T')) return num * 1e12;
+            if (str.includes('B')) return num * 1e9;
+            if (str.includes('M')) return num * 1e6;
+            if (str.includes('K')) return num * 1e3;
+            return num;
+        }
+        
+        // Build baseline statistics for each ticker
+        let tickerBaselines = {};
+        function buildTickerBaselines(flows) {
+            const baselines = {};
+            
+            flows.forEach(f => {
+                if (!baselines[f.Symbol]) {
+                    baselines[f.Symbol] = {
+                        totalPremium: 0,
+                        tradeCount: 0,
+                        avgPremium: 0,
+                        maxPremium: 0,
+                        mktCap: f.MktCap || 0
+                    };
+                }
+                baselines[f.Symbol].totalPremium += f.Premium;
+                baselines[f.Symbol].tradeCount++;
+                baselines[f.Symbol].maxPremium = Math.max(baselines[f.Symbol].maxPremium, f.Premium);
+                if (f.MktCap > 0) baselines[f.Symbol].mktCap = f.MktCap;
+            });
+            
+            // Calculate averages
+            Object.keys(baselines).forEach(ticker => {
+                const b = baselines[ticker];
+                b.avgPremium = b.tradeCount > 0 ? b.totalPremium / b.tradeCount : 0;
+            });
+            
+            return baselines;
+        }
+        
+        // Check if a cluster's premium is unusual relative to ticker's baseline
+        function isUnusualActivity(symbol, clusterPremium, baseline) {
+            if (!baseline || !baseline[symbol]) return { unusual: false, ratio: 1 };
+            const b = baseline[symbol];
+            if (b.avgPremium <= 0) return { unusual: false, ratio: 1 };
+            
+            const ratio = clusterPremium / b.avgPremium;
+            // Consider unusual if cluster premium is 3x+ the average trade for this ticker
+            return { unusual: ratio >= 3, ratio: ratio };
+        }
+        
+        // Check if flow might be a spread component (offsetting activity in same timeframe)
+        function detectSpreadComponent(trade, allTrades) {
+            // Look for offsetting trades in same ticker within 60 seconds
+            const tradeTime = new Date(`${trade.CreatedDate} ${trade.CreatedTime}`).getTime();
+            const sameTicker = allTrades.filter(t => 
+                t.Symbol === trade.Symbol && 
+                t !== trade &&
+                Math.abs(new Date(`${t.CreatedDate} ${t.CreatedTime}`).getTime() - tradeTime) <= 60000
+            );
+            
+            if (sameTicker.length === 0) return { isLikelySpread: false };
+            
+            // Check for offsetting characteristics
+            const hasOppositeType = sameTicker.some(t => t.CallPut !== trade.CallPut);
+            const hasOppositeSide = sameTicker.some(t => 
+                (['A','AA'].includes(trade.Side) && ['B','BB'].includes(t.Side)) ||
+                (['B','BB'].includes(trade.Side) && ['A','AA'].includes(t.Side))
+            );
+            const hasDifferentStrike = sameTicker.some(t => t.Strike !== trade.Strike);
+            
+            // Likely spread if: same ticker, nearby time, AND (opposite type OR opposite side with different strike)
+            const isLikelySpread = (hasOppositeType || (hasOppositeSide && hasDifferentStrike));
+            
+            return { 
+                isLikelySpread,
+                offsetCount: sameTicker.length,
+                hasOppositeType,
+                hasOppositeSide
+            };
+        }
+        
+        // Get market cap tier for display
+        function getMktCapTier(mktCap) {
+            if (!mktCap || mktCap <= 0) return { tier: 'Unknown', class: '' };
+            if (mktCap >= 200e9) return { tier: 'Mega', class: 'mega' };      // $200B+
+            if (mktCap >= 10e9) return { tier: 'Large', class: 'large' };     // $10B+
+            if (mktCap >= 2e9) return { tier: 'Mid', class: 'mid' };          // $2B+
+            if (mktCap >= 300e6) return { tier: 'Small', class: 'small' };    // $300M+
+            return { tier: 'Micro', class: 'micro' };                          // <$300M
+        }
+        
         // Calculate Implied Volatility using Newton-Raphson
         function calcIV(S, K, T, r, marketPrice, isCall, maxIterations = 100, tolerance = 0.0001) {
             if (T <= 0 || marketPrice <= 0) return null;
@@ -3565,6 +3664,7 @@
                     const dte = histFilterDte.value;
                     if (dte === '0') filtered = filtered.filter(f => f.Dte === 0);
                     else if (dte === '7') filtered = filtered.filter(f => f.Dte <= 7);
+                    else if (dte === '15-45') filtered = filtered.filter(f => f.Dte >= 15 && f.Dte <= 45);
                     else if (dte === '30') filtered = filtered.filter(f => f.Dte <= 30);
                     else if (dte === '90') filtered = filtered.filter(f => f.Dte <= 90);
                     else if (dte === '365') filtered = filtered.filter(f => f.Dte <= 365);
@@ -4233,7 +4333,11 @@
                 filtered = filtered.filter(f => f.StockEtf === filterSecurity.value);
             }
             if (filterDte.value) {
-                if (filterDte.value === '30') {
+                if (filterDte.value === '7') {
+                    filtered = filtered.filter(f => f.Dte <= 7);
+                } else if (filterDte.value === '15-45') {
+                    filtered = filtered.filter(f => f.Dte >= 15 && f.Dte <= 45);
+                } else if (filterDte.value === '30') {
                     filtered = filtered.filter(f => f.Dte <= 30);
                 } else if (filterDte.value === '60') {
                     filtered = filtered.filter(f => f.Dte > 30 && f.Dte <= 60);
@@ -4446,6 +4550,17 @@
                             row.Dte = parseInt(row.Dte) || 0;
                             row.OI = parseInt(row.OI) || 0;
                             
+                            // Parse market cap (convert from string like "1.5B" or "500M")
+                            row.MktCap = parseMktCap(row.MktCap);
+                            
+                            // Calculate relative premium (premium as % of market cap)
+                            // Higher = more significant for that company
+                            if (row.MktCap > 0) {
+                                row.RelativePremium = (row.Premium / row.MktCap) * 100; // as percentage
+                            } else {
+                                row.RelativePremium = 0;
+                            }
+                            
                             // Calculate IV if not already present
                             if (!row.ImpliedVolatility && row.Spot > 0 && row.Strike > 0 && row.Price > 0) {
                                 const T = Math.max(row.Dte, 0.5) / 365;
@@ -4454,6 +4569,9 @@
                                 row.ImpliedVolatility = calcIV(row.Spot, row.Strike, T, r, row.Price, isCall);
                             }
                         });
+                        
+                        // Build historical baseline for each ticker (avg premium per trade)
+                        tickerBaselines = buildTickerBaselines(allFlows);
                         
                         // Filter out $0 spot tickers (noise/bad data)
                         allFlows = allFlows.filter(row => row.Spot > 0);
@@ -4834,6 +4952,32 @@
 
             function score(c) {
                 let s = 0; const checks = [];
+                const warnings = []; // Track red flags
+                
+                // Get market cap info
+                const firstTrade = c.trades[0];
+                const mktCap = firstTrade?.MktCap || 0;
+                const mktCapTier = getMktCapTier(mktCap);
+                
+                // Check for upcoming earnings (red flag)
+                const earningsDate = alertStreamData?.earnings?.[c.symbol];
+                let hasEarningsSoon = false;
+                if (earningsDate) {
+                    const today = new Date();
+                    const earnings = new Date(earningsDate);
+                    const daysToEarnings = Math.ceil((earnings - today) / (1000 * 60 * 60 * 24));
+                    if (daysToEarnings >= 0 && daysToEarnings <= 14) {
+                        hasEarningsSoon = true;
+                        warnings.push(`Earnings in ${daysToEarnings}d`);
+                    }
+                }
+                
+                // Check if this might be a spread component
+                const spreadCheck = detectSpreadComponent(firstTrade, allFlows);
+                if (spreadCheck.isLikelySpread) {
+                    s -= 2; // Penalize likely spread components
+                    warnings.push('Possible spread');
+                }
                 
                 // Sweeps are CRITICAL for conviction - urgency indicator
                 const sw = c.trades.filter(t => t.Type === 'SWEEP').length;
@@ -4844,46 +4988,195 @@
                 else { checks.push({n:'No Sweeps',p:false}); }
                 
                 // Execution at/above ask shows aggressive buying
+                // AA (above ask) is MORE significant than A (at ask)
+                const aboveAsk = c.trades.filter(t => t.Side === 'AA').length / c.trades.length;
                 const atAsk = c.trades.filter(t => ['A','AA'].includes(t.Side)).length / c.trades.length;
-                if (atAsk >= 0.8) { s += 2; checks.push({n:'At Ask 80%+',p:true}); }
+                if (aboveAsk >= 0.5) { s += 3; checks.push({n:'Above Ask 50%+',p:true}); }
+                else if (atAsk >= 0.8) { s += 2; checks.push({n:'At Ask 80%+',p:true}); }
                 else if (atAsk >= 0.5) { s += 1; checks.push({n:'At Ask 50%+',p:'partial'}); }
                 else checks.push({n:'At Ask',p:false});
 
-                // OI exceeded indicates opening positions
-                const oi = c.trades.filter(t => ['YELLOW','MAGENTA'].includes(t.Color)).length / c.trades.length;
-                if (oi >= 0.5) { s += 2; checks.push({n:'OI Exceeded',p:true}); }
-                else if (oi > 0) { s += 1; checks.push({n:'OI Exceeded',p:'partial'}); }
-                else checks.push({n:'OI Exceeded',p:false});
+                // OI ANALYSIS - Two separate checks:
+                // 1. BBS Color flag (YELLOW/MAGENTA = trade exceeded OI at execution time)
+                const oiFlag = c.trades.filter(t => ['YELLOW','MAGENTA'].includes(t.Color)).length / c.trades.length;
+                if (oiFlag >= 0.5) { s += 1; checks.push({n:'BBS: Opening',p:true}); }
+                else if (oiFlag > 0) { checks.push({n:'BBS: Opening',p:'partial'}); }
+                else checks.push({n:'BBS: Opening',p:false});
+                
+                // 2. Calculated Vol/OI ratio (more transparent/verifiable)
+                const avgOI = c.trades.reduce((sum, t) => sum + (t.OI || 0), 0) / c.trades.length;
+                const volOiRatio = avgOI > 0 ? (c.vol / avgOI) : 0;
+                if (volOiRatio >= 1.0) { s += 2; checks.push({n:`Vol>${Math.round(volOiRatio*100)}%OI`,p:true}); }
+                else if (volOiRatio >= 0.5) { s += 1; checks.push({n:`Vol=${Math.round(volOiRatio*100)}%OI`,p:'partial'}); }
+                else if (avgOI > 0) { checks.push({n:`Vol=${Math.round(volOiRatio*100)}%OI`,p:false}); }
 
-                // Premium size
-                if (c.prem >= 500000) { s += 2; checks.push({n:'$500K+',p:true}); }
-                else if (c.prem >= 200000) { s += 1; checks.push({n:'$200K+',p:true}); }
-                else if (c.prem >= 100000) checks.push({n:'$100K+',p:'partial'});
-                else checks.push({n:'Notional',p:false});
+                // RELATIVE PREMIUM - more important than absolute premium
+                // $500K in a $2B company is more significant than $500K in AAPL
+                if (mktCap > 0) {
+                    const relativePrem = (c.prem / mktCap) * 10000; // basis points
+                    if (relativePrem >= 5) { s += 3; checks.push({n:'High Relative',p:true}); }      // 0.05%+ of mkt cap
+                    else if (relativePrem >= 1) { s += 2; checks.push({n:'Good Relative',p:true}); } // 0.01%+ of mkt cap
+                    else if (relativePrem >= 0.5) { s += 1; checks.push({n:'Relative OK',p:'partial'}); }
+                    else checks.push({n:'Low Relative',p:false});
+                } else {
+                    // Fallback to absolute premium if no market cap
+                    if (c.prem >= 500000) { s += 2; checks.push({n:'$500K+',p:true}); }
+                    else if (c.prem >= 200000) { s += 1; checks.push({n:'$200K+',p:true}); }
+                    else if (c.prem >= 100000) checks.push({n:'$100K+',p:'partial'});
+                    else checks.push({n:'Notional',p:false});
+                }
+                
+                // UNUSUAL ACTIVITY - is this cluster unusual for THIS ticker?
+                const unusualCheck = isUnusualActivity(c.symbol, c.prem, tickerBaselines);
+                if (unusualCheck.unusual) {
+                    s += 2;
+                    checks.push({n:`${unusualCheck.ratio.toFixed(1)}x Avg`,p:true});
+                } else if (unusualCheck.ratio >= 2) {
+                    s += 1;
+                    checks.push({n:`${unusualCheck.ratio.toFixed(1)}x Avg`,p:'partial'});
+                }
+                
+                // MARKET CAP TIER BONUS - small/mid caps are more signal-rich
+                if (mktCapTier.tier === 'Small' || mktCapTier.tier === 'Micro') {
+                    s += 2;
+                    checks.push({n:'Small Cap',p:true});
+                } else if (mktCapTier.tier === 'Mid') {
+                    s += 1;
+                    checks.push({n:'Mid Cap',p:'partial'});
+                } else if (mktCapTier.tier === 'Mega') {
+                    // Mega caps are mostly noise
+                    checks.push({n:'Mega Cap',p:false});
+                }
 
                 // DTE sweet spot (not too short, not too long)
                 const avgDte = c.trades.reduce((s,t) => s + t.Dte, 0) / c.trades.length;
-                if (avgDte >= 10 && avgDte <= 60) { s += 1; checks.push({n:'Good DTE',p:true}); }
-                else if (avgDte >= 3 && avgDte <= 90) checks.push({n:'DTE',p:'partial'});
-                else checks.push({n:'DTE',p:false});
+                if (avgDte >= 14 && avgDte <= 45) { s += 1; checks.push({n:'Ideal DTE',p:true}); }
+                else if (avgDte >= 7 && avgDte <= 60) checks.push({n:'OK DTE',p:'partial'});
+                else if (avgDte < 7) {
+                    checks.push({n:'Short DTE',p:false});
+                    if (!hasEarningsSoon) warnings.push('Weeklies w/o catalyst');
+                }
+                else checks.push({n:'Long DTE',p:false});
 
-                // Strike proximity to spot
+                // Strike proximity to spot - OTM is actually more directional
                 const avgSpot = c.trades.reduce((s,t) => s + t.Spot, 0) / c.trades.length;
-                const diff = Math.abs(c.strike - avgSpot) / avgSpot;
-                if (diff <= 0.05) { s += 1; checks.push({n:'ATM',p:true}); }
-                else if (diff <= 0.10) checks.push({n:'Near ATM',p:'partial'});
-                else checks.push({n:'OTM',p:false});
+                const diff = (c.strike - avgSpot) / avgSpot;
+                const isCall = c.cp === 'CALL';
+                const isOTM = (isCall && diff > 0.02) || (!isCall && diff < -0.02);
+                const isDeepOTM = Math.abs(diff) > 0.10;
+                
+                if (isOTM && !isDeepOTM) {
+                    s += 1; 
+                    checks.push({n:'OTM (directional)',p:true});
+                } else if (Math.abs(diff) <= 0.02) {
+                    checks.push({n:'ATM',p:'partial'});
+                } else if (isDeepOTM) {
+                    checks.push({n:'Deep OTM',p:false});
+                    warnings.push('Lottery ticket');
+                } else {
+                    checks.push({n:'ITM (hedge?)',p:false});
+                }
 
                 // Multiple trades at same strike shows accumulation
                 if (c.trades.length >= 5) { s += 1; checks.push({n:'5+ Trades',p:true}); }
                 else if (c.trades.length >= 3) checks.push({n:'3+ Trades',p:'partial'});
+                
+                // TIME CLUSTERING - trades happening in rapid succession show urgency/conviction
+                const timeCluster = analyzeTimeProximity(c.trades);
+                if (timeCluster.maxBurstPremium >= 500000 && timeCluster.maxBurstSeconds <= 60) {
+                    s += 3;
+                    checks.push({n:`${fmt(timeCluster.maxBurstPremium)} in ${timeCluster.maxBurstSeconds}s`,p:true});
+                } else if (timeCluster.maxBurstPremium >= 200000 && timeCluster.maxBurstSeconds <= 120) {
+                    s += 2;
+                    checks.push({n:`${fmt(timeCluster.maxBurstPremium)} in ${timeCluster.maxBurstSeconds}s`,p:true});
+                } else if (timeCluster.avgGapSeconds <= 300 && c.trades.length >= 3) {
+                    s += 1;
+                    checks.push({n:`Avg ${Math.round(timeCluster.avgGapSeconds)}s gap`,p:'partial'});
+                } else if (c.trades.length >= 2) {
+                    checks.push({n:'Spread out',p:false});
+                }
+                
+                // PENALTY for earnings proximity (can't read the flow)
+                if (hasEarningsSoon) {
+                    s -= 2;
+                    checks.push({n:'Pre-Earnings',p:false});
+                }
 
-                return { score: s, checks, max: 12, hasSweeps: sw > 0 };
+                return { 
+                    score: s, 
+                    checks, 
+                    warnings,
+                    max: 22, 
+                    hasSweeps: sw > 0,
+                    mktCapTier,
+                    isLikelySpread: spreadCheck.isLikelySpread,
+                    hasEarningsSoon,
+                    timeCluster
+                };
+            }
+            
+            // Analyze time proximity of trades within a cluster
+            function analyzeTimeProximity(trades) {
+                if (trades.length < 2) return { maxBurstPremium: 0, maxBurstSeconds: Infinity, avgGapSeconds: Infinity };
+                
+                // Parse timestamps and sort
+                const sorted = trades.map(t => ({
+                    ...t,
+                    timestamp: parseTradeTimestamp(t.CreatedDate, t.CreatedTime)
+                })).filter(t => t.timestamp).sort((a, b) => a.timestamp - b.timestamp);
+                
+                if (sorted.length < 2) return { maxBurstPremium: 0, maxBurstSeconds: Infinity, avgGapSeconds: Infinity };
+                
+                // Find the best "burst" - consecutive trades within a short window
+                let maxBurstPremium = 0;
+                let maxBurstSeconds = Infinity;
+                let totalGap = 0;
+                let gapCount = 0;
+                
+                // Sliding window to find bursts
+                for (let i = 0; i < sorted.length; i++) {
+                    let burstPremium = sorted[i].Premium;
+                    for (let j = i + 1; j < sorted.length; j++) {
+                        const gapSeconds = (sorted[j].timestamp - sorted[i].timestamp) / 1000;
+                        if (gapSeconds <= 120) { // 2 minute window
+                            burstPremium += sorted[j].Premium;
+                            if (burstPremium > maxBurstPremium) {
+                                maxBurstPremium = burstPremium;
+                                maxBurstSeconds = gapSeconds;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                
+                // Calculate average gap between consecutive trades
+                for (let i = 1; i < sorted.length; i++) {
+                    totalGap += (sorted[i].timestamp - sorted[i-1].timestamp) / 1000;
+                    gapCount++;
+                }
+                const avgGapSeconds = gapCount > 0 ? totalGap / gapCount : Infinity;
+                
+                return { maxBurstPremium, maxBurstSeconds: Math.round(maxBurstSeconds), avgGapSeconds };
+            }
+            
+            // Parse trade timestamp into Date object
+            function parseTradeTimestamp(dateStr, timeStr) {
+                if (!dateStr || !timeStr) return null;
+                try {
+                    // Handle formats like "11/10/2025" and "3:59:50 PM"
+                    const combined = `${dateStr} ${timeStr}`;
+                    const parsed = new Date(combined);
+                    return isNaN(parsed.getTime()) ? null : parsed;
+                } catch (e) {
+                    return null;
+                }
             }
 
             const scored = sigClusters.map(c => ({...c, ...score(c)})).sort((a,b) => b.score - a.score);
-            // Require at least 1 sweep AND score >= 6 for high conviction
-            let highConv = scored.filter(c => c.score >= 6 && c.hasSweeps);
+            // Require at least 1 sweep AND score >= 7 for high conviction (raised threshold with new scoring)
+            // Also exclude likely spread components and pre-earnings plays
+            let highConv = scored.filter(c => c.score >= 9 && c.hasSweeps && !c.isLikelySpread && !c.hasEarningsSoon);
             // Filter to unique tickers if enabled (keep highest scoring entry per ticker)
             if (uniqueTickersOnly) {
                 const seenTickers = new Set();
@@ -4901,7 +5194,7 @@
 
             const hcHtml = highConv.length ? highConv.map((c, idx) => {
                 const dir = c.cp === 'CALL' ? 'bullish' : 'bearish';
-                const level = c.score >= 9 ? 'high' : 'medium';
+                const level = c.score >= 15 ? 'high' : c.score >= 12 ? 'medium' : 'low';
                 const avgSpot = c.trades.reduce((s,t) => s + t.Spot, 0) / c.trades.length;
                 const avgDte = Math.round(c.trades.reduce((s,t) => s + t.Dte, 0) / c.trades.length);
                 const totalOI = c.trades.reduce((s,t) => s + (t.OI || 0), 0);
@@ -4911,6 +5204,12 @@
                 const earningsBadge = getEarningsBadge(c.symbol);
                 const livePriceInfo = getLivePriceInfo(c.symbol, avgSpot, dir);
                 const volumeConfirm = getVolumeConfirmation(c.symbol, dir);
+                
+                // Market cap tier badge
+                const mktCapBadge = c.mktCapTier?.tier ? `<span style="font-size:0.65rem;padding:0.15rem 0.4rem;border-radius:4px;background:${c.mktCapTier.tier === 'Small' || c.mktCapTier.tier === 'Micro' ? 'rgba(63,185,80,0.15)' : c.mktCapTier.tier === 'Mega' ? 'rgba(248,81,73,0.15)' : 'rgba(88,166,255,0.15)'};color:${c.mktCapTier.tier === 'Small' || c.mktCapTier.tier === 'Micro' ? 'var(--accent-bullish)' : c.mktCapTier.tier === 'Mega' ? 'var(--accent-bearish)' : 'var(--accent-info)'}">${c.mktCapTier.tier}</span>` : '';
+                
+                // Warnings display
+                const warningsHtml = c.warnings?.length > 0 ? `<div style="margin-top:0.5rem;padding:0.4rem 0.6rem;background:rgba(248,81,73,0.1);border-radius:6px;border:1px solid rgba(248,81,73,0.2)"><span style="font-size:0.7rem;color:var(--accent-bearish)">⚠️ ${c.warnings.join(' • ')}</span></div>` : '';
                 
                 // Get the best trade (highest premium) for tracking
                 const bestTrade = c.trades.reduce((best, t) => t.Premium > best.Premium ? t : best, c.trades[0]);
@@ -4961,6 +5260,7 @@
                         <div class="flow-ticker">
                             <span class="ticker-symbol ticker-clickable">${c.symbol}</span>
                             <span class="direction-badge ${dir}">${c.cp}</span>
+                            ${mktCapBadge}
                             ${earningsBadge}
                             ${livePriceInfo.badge}
                             ${volumeConfirm}
@@ -4990,10 +5290,11 @@
                     <div class="flow-checklist" style="margin-top:0.75rem">
                         ${c.checks.map(ch => `<span class="check-item ${ch.p === true ? 'pass' : ch.p === 'partial' ? 'neutral' : 'fail'}">${ch.p === true ? '✓' : ch.p === 'partial' ? '~' : '✗'} ${ch.n}</span>`).join('')}
                     </div>
+                    ${warningsHtml}
                     <div class="conviction-score ${level}">Conviction: ${level.toUpperCase()} (${c.score}/${c.max})</div>
-                    <p class="flow-analysis">${c.trades.length} trades clustering at $${c.strike} ${c.cp.toLowerCase()}, totaling ${num(c.vol)} contracts.</p>
+                    <p class="flow-analysis">${c.trades.length} trades clustering at $${c.strike} ${c.cp.toLowerCase()}, totaling ${num(c.vol)} contracts.${c.mktCapTier?.tier === 'Small' || c.mktCapTier?.tier === 'Micro' ? ' <strong style="color:var(--accent-bullish)">Small cap = higher signal quality.</strong>' : ''}</p>
                 </div>`;
-            }).join('') : '<p style="color:var(--text-muted)">No high conviction flows identified (score 7+ required).</p>';
+            }).join('') : '<p style="color:var(--text-muted)">No conviction flows identified (score 9+/22, sweeps required, excludes spread components and pre-earnings).</p>';
             document.getElementById('high-conviction-flows').innerHTML = hcHtml;
 
             // Clustering - score >= 4 default, score >= 6 for high conviction, limit 10
@@ -6532,11 +6833,11 @@
                 }
             });
             
-            // Count all flows per ticker/strike for display
-            const strikeCountsByTicker = {};
-            flows.forEach(f => { 
-                const k = `${f.Symbol}|${f.Strike}`; 
-                strikeCountsByTicker[k] = (strikeCountsByTicker[k]||0) + 1; 
+            // Count flows per ticker/strike/direction (excluding ML/ multi-leg)
+            const strikeCountsByTickerDir = {};
+            flows.filter(f => f.Type !== 'ML/').forEach(f => { 
+                const k = `${f.Symbol}|${f.Strike}|${f.CallPut}`; 
+                strikeCountsByTickerDir[k] = (strikeCountsByTickerDir[k]||0) + 1; 
             });
             
             const golden = Object.values(goldenByStrike).sort((a,b) => b.Premium - a.Premium);
@@ -6551,8 +6852,8 @@
                 const dir = isBullish ? 'bullish' : 'bearish';
                 const sideLabel = t.Side === 'AA' ? 'ABV ASK' : 'BLW BID';
                 const sideColor = t.Side === 'AA' ? 'var(--accent-bullish)' : 'var(--accent-bearish)';
-                const k = `${t.Symbol}|${t.Strike}`;
-                const flowsAtStrike = strikeCountsByTicker[k];
+                const k = `${t.Symbol}|${t.Strike}|${t.CallPut}`;
+                const flowsAtStrike = strikeCountsByTickerDir[k] || 1;
                 
                 // Determine action: AA = Buying, BB = Selling/Writing
                 const isBuying = t.Side === 'AA';
@@ -6564,12 +6865,24 @@
                     ? (t.CallPut === 'CALL' ? 'Long Calls' : 'Long Puts')
                     : (t.CallPut === 'CALL' ? 'Short Calls' : 'Short Puts');
                 
+                // Calculate relative premium indicator
+                const mktCap = t.MktCap || 0;
+                const relativePrem = mktCap > 0 ? (t.Premium / mktCap) * 10000 : 0; // basis points
+                const isHighRelative = relativePrem >= 1; // 0.01%+ of market cap
+                const relativeLabel = mktCap > 0 
+                    ? (relativePrem >= 5 ? 'HIGH' : relativePrem >= 1 ? 'MED' : 'LOW')
+                    : '-';
+                const relativeColor = relativePrem >= 5 ? 'var(--accent-bullish)' : relativePrem >= 1 ? 'var(--accent-warning)' : 'var(--text-muted)';
+                const relativeTip = mktCap > 0 
+                    ? `${(relativePrem / 100).toFixed(3)}% of $${(mktCap/1e9).toFixed(1)}B mkt cap`
+                    : 'No market cap data';
+                
                 // Check if already tracked
                 const isTracked = isFlowTracked(t);
                 const trackClass = isTracked ? 'tracked' : '';
                 const trackTitle = isTracked ? 'Already tracked' : 'Track this flow';
                 
-                return `<div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 55px 70px 70px 70px 40px 50px 30px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-left:3px solid ${isBullish ? 'var(--accent-bullish)' : 'var(--accent-bearish)'};border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
+                return `<div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 55px 70px 70px 45px 70px 40px 50px 30px;gap:0.25rem;padding:0.5rem 0.75rem;background:var(--bg-secondary);border-left:3px solid ${isBullish ? 'var(--accent-bullish)' : 'var(--accent-bearish)'};border-radius:6px;margin-bottom:0.4rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;align-items:center;white-space:nowrap">
                     <span class="ticker-clickable" style="font-weight:600;color:var(--text-primary)">${t.Symbol}</span>
                     <span style="color:var(--text-muted)">${t.CreatedTime||'-'}</span>
                     <span class="direction-badge ${dir}" style="font-size:0.6rem;padding:0.15rem 0.35rem">${t.CallPut}</span>
@@ -6581,6 +6894,7 @@
                     <span style="color:var(--accent-purple)">${num(t.OI || 0)}</span>
                     <span style="color:var(--text-secondary)">@$${t.Price.toFixed(2)}</span>
                     <span style="color:var(--accent-warning);font-weight:600">${fmt(t.Premium)}</span>
+                    <span style="color:${relativeColor};font-size:0.6rem;font-weight:600" title="${relativeTip}">${relativeLabel}</span>
                     <span style="color:var(--text-muted)">${t.ExpirationDate}</span>
                     <span style="color:var(--text-muted)">${t.Dte}d</span>
                     <span style="color:var(--text-muted);font-size:0.65rem">${flowsAtStrike}@str</span>
@@ -6593,10 +6907,10 @@
             }).join('');
             
             const gsHtml = golden.length ? `
-                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">Yellow sweeps with $100K+ premium (top trade per strike). <span style="color:var(--accent-bullish)">BTO = Buy to Open</span> · <span style="color:var(--accent-purple)">STO = Sell to Open (Writing)</span> · Click <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:middle"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg> to track</p>
-                <div style="overflow-x:auto"><div style="min-width:1035px">
-                    <div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 55px 70px 70px 70px 40px 50px 30px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
-                        <span>Symbol</span><span>Time</span><span>C/P</span><span>Side</span><span>Action</span><span>Strike</span><span>Spot</span><span>Volume</span><span>OI</span><span>Price</span><span>Premium</span><span>Exp</span><span>DTE</span><span>Flows</span><span></span>
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">Yellow sweeps with $100K+ premium (top trade per strike). <span style="color:var(--accent-bullish)">BTO = Buy to Open</span> · <span style="color:var(--accent-purple)">STO = Sell to Open</span> · REL = Premium relative to market cap (<span style="color:var(--accent-bullish)">HIGH</span>=0.05%+ · <span style="color:var(--accent-warning)">MED</span>=0.01%+)</p>
+                <div style="overflow-x:auto"><div style="min-width:1080px">
+                    <div style="display:grid;grid-template-columns:70px 85px 55px 55px 70px 70px 70px 70px 55px 70px 70px 45px 70px 40px 50px 30px;gap:0.25rem;padding:0.4rem 0.75rem;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;white-space:nowrap">
+                        <span>Symbol</span><span>Time</span><span>C/P</span><span>Side</span><span>Action</span><span>Strike</span><span>Spot</span><span>Volume</span><span>OI</span><span>Price</span><span>Premium</span><span>REL</span><span>Exp</span><span>DTE</span><span>Flows</span><span></span>
                     </div>
                     ${gsRows}
                 </div></div>` : '<p style="color:var(--text-muted)">No golden sweeps found (Yellow sweeps, AA/BB, $100K+ premium).</p>';
