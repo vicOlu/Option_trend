@@ -2552,7 +2552,7 @@
                         ` : ''}
                     </div>
                 </div>`;
-            }).join('') : '<p style="color:var(--text-muted)">No multi-leg strategies match the current filters.</p>';
+            }).join('') : '<p style="color:var(--text-muted)">No multi-leg strategies found ($100K+ premium threshold).</p>';
             
             const listContainer = document.getElementById('multi-leg-strategies-list');
             if (listContainer) {
@@ -5883,91 +5883,268 @@
                 
                 // 2-leg strategies
                 if (legs.length === 2) {
-                    // STRADDLE: Same strike, same exp, 1 call + 1 put
+                    // SAME STRIKE, SAME EXP, 1 CALL + 1 PUT
                     if (calls.length === 1 && puts.length === 1 && strikes.length === 1 && exps.length === 1) {
-                        const isBuying = buys.length === 2;
-                        strategy = {
-                            name: isBuying ? 'Long Straddle' : 'Short Straddle',
-                            type: 'volatility',
-                            bias: 'neutral',
-                            isCredit: !isBuying,
-                            netAmount: netAmount,
-                            description: `${strikes[0]} strike, ${group.exp}`,
-                            education: isBuying 
-                                ? `<strong>Long Straddle:</strong> You're betting the stock will make a BIG move in either direction. You profit if ${group.symbol} moves significantly above or below $${strikes[0]} by expiration. You lose if the stock stays near $${strikes[0]} (max loss = premium paid).`
-                                : `<strong>Short Straddle:</strong> You're betting the stock stays FLAT near $${strikes[0]}. You keep the premium if ${group.symbol} doesn't move much. Risk is unlimited if the stock makes a big move.`,
-                            maxProfit: isBuying ? 'Unlimited' : fmt(netAmount),
-                            maxLoss: isBuying ? fmt(netAmount) : 'Unlimited',
-                            breakeven: `$${(strikes[0] - netAmount/legs[0].Volume/100).toFixed(2)} / $${(strikes[0] + netAmount/legs[0].Volume/100).toFixed(2)}`
-                        };
+                        const callLeg = calls[0];
+                        const putLeg = puts[0];
+                        const callIsBuy = ['A', 'AA'].includes(callLeg.Side);
+                        const putIsBuy = ['A', 'AA'].includes(putLeg.Side);
+                        
+                        if (callIsBuy && putIsBuy) {
+                            // LONG STRADDLE: Buy both call and put
+                            strategy = {
+                                name: 'Long Straddle',
+                                type: 'volatility',
+                                bias: 'neutral',
+                                isCredit: false,
+                                netAmount: netAmount,
+                                description: `$${strikes[0]} strike, ${group.exp}`,
+                                education: `<strong>Long Straddle:</strong> You're betting the stock will make a BIG move in either direction. You profit if ${group.symbol} moves significantly above or below $${strikes[0]} by expiration. You lose if the stock stays near $${strikes[0]} (max loss = premium paid).`,
+                                maxProfit: 'Unlimited',
+                                maxLoss: fmt(netAmount),
+                                breakeven: `$${(strikes[0] - netAmount/legs[0].Volume/100).toFixed(2)} / $${(strikes[0] + netAmount/legs[0].Volume/100).toFixed(2)}`
+                            };
+                        } else if (!callIsBuy && !putIsBuy) {
+                            // SHORT STRADDLE: Sell both call and put
+                            strategy = {
+                                name: 'Short Straddle',
+                                type: 'volatility',
+                                bias: 'neutral',
+                                isCredit: true,
+                                netAmount: netAmount,
+                                description: `$${strikes[0]} strike, ${group.exp}`,
+                                education: `<strong>Short Straddle:</strong> You're betting the stock stays FLAT near $${strikes[0]}. You keep the premium if ${group.symbol} doesn't move much. Risk is unlimited if the stock makes a big move.`,
+                                maxProfit: fmt(netAmount),
+                                maxLoss: 'Unlimited',
+                                breakeven: `$${(strikes[0] - netAmount/legs[0].Volume/100).toFixed(2)} / $${(strikes[0] + netAmount/legs[0].Volume/100).toFixed(2)}`
+                            };
+                        } else if (callIsBuy && !putIsBuy) {
+                            // SYNTHETIC LONG STOCK: Buy call, sell put at same strike
+                            strategy = {
+                                name: 'Synthetic Long Stock',
+                                type: 'directional',
+                                bias: 'bullish',
+                                isCredit: isCredit,
+                                netAmount: netAmount,
+                                description: `Buy $${strikes[0]} call / Sell $${strikes[0]} put`,
+                                education: `<strong>Synthetic Long Stock:</strong> This replicates owning 100 shares of ${group.symbol} using options. You have the same profit/loss profile as stock ownership but with less capital. Unlimited upside above $${strikes[0]}, unlimited downside below. Often used for leverage or when shares are hard to borrow.`,
+                                maxProfit: 'Unlimited',
+                                maxLoss: 'Substantial (like owning stock)',
+                                breakeven: `$${strikes[0]}`
+                            };
+                        } else {
+                            // SYNTHETIC SHORT STOCK: Sell call, buy put at same strike
+                            strategy = {
+                                name: 'Synthetic Short Stock',
+                                type: 'directional',
+                                bias: 'bearish',
+                                isCredit: isCredit,
+                                netAmount: netAmount,
+                                description: `Sell $${strikes[0]} call / Buy $${strikes[0]} put`,
+                                education: `<strong>Synthetic Short Stock:</strong> This replicates shorting 100 shares of ${group.symbol} using options. You profit if the stock falls, lose if it rises. Unlimited downside risk above $${strikes[0]}. Often used when shares are hard to borrow or to avoid borrow fees.`,
+                                maxProfit: 'Substantial (stock goes to zero)',
+                                maxLoss: 'Unlimited',
+                                breakeven: `$${strikes[0]}`
+                            };
+                        }
                     }
-                    // VERTICAL SPREAD: Same type (both calls or both puts), same exp, different strikes
+                    // VERTICAL SPREAD or RATIO SPREAD: Same type (both calls or both puts), same exp, different strikes
                     else if ((calls.length === 2 || puts.length === 2) && strikes.length === 2 && exps.length === 1) {
                         const isCallSpread = calls.length === 2;
-                        const buyLeg = legs.find(l => ['A', 'AA'].includes(l.Side));
-                        const sellLeg = legs.find(l => ['B', 'BB'].includes(l.Side));
+                        const relevantLegs = isCallSpread ? calls : puts;
+                        const sortedLegs = [...relevantLegs].sort((a, b) => a.Strike - b.Strike);
+                        const lowerLeg = sortedLegs[0];
+                        const upperLeg = sortedLegs[1];
                         
-                        if (buyLeg && sellLeg) {
-                            const buyStrike = buyLeg.Strike;
-                            const sellStrike = sellLeg.Strike;
-                            const spreadWidth = Math.abs(sellStrike - buyStrike) * 100 * buyLeg.Volume;
+                        // Check if it's a RATIO SPREAD (unequal volumes)
+                        if (lowerLeg.Volume !== upperLeg.Volume) {
+                            const ratio = Math.max(lowerLeg.Volume, upperLeg.Volume) / Math.min(lowerLeg.Volume, upperLeg.Volume);
+                            // Only classify as ratio if ratio is significant (>= 1.5)
+                            if (ratio >= 1.5) {
+                                const lowerIsBuy = ['A', 'AA'].includes(lowerLeg.Side);
+                                const upperIsBuy = ['A', 'AA'].includes(upperLeg.Side);
+                                
+                                // Backspread = buying more of the OTM options
+                                // For CALLS: OTM = higher strike, so backspread = buy more upper
+                                // For PUTS: OTM = lower strike, so backspread = buy more lower
+                                let isBackspread;
+                                if (isCallSpread) {
+                                    // Call backspread: buy more higher strike calls
+                                    isBackspread = upperLeg.Volume > lowerLeg.Volume && upperIsBuy;
+                                } else {
+                                    // Put backspread: buy more lower strike puts
+                                    isBackspread = lowerLeg.Volume > upperLeg.Volume && lowerIsBuy;
+                                }
+                                
+                                strategy = {
+                                    name: isCallSpread 
+                                        ? (isBackspread ? 'Call Ratio Backspread' : 'Call Ratio Spread')
+                                        : (isBackspread ? 'Put Ratio Backspread' : 'Put Ratio Spread'),
+                                    type: 'directional',
+                                    bias: isCallSpread 
+                                        ? (isBackspread ? 'very bullish' : 'moderately bullish')
+                                        : (isBackspread ? 'very bearish' : 'moderately bearish'),
+                                    isCredit: isCredit,
+                                    netAmount: netAmount,
+                                    description: `${Math.round(ratio)}:1 ratio at $${lowerLeg.Strike}/$${upperLeg.Strike}`,
+                                    education: isBackspread
+                                        ? `<strong>Ratio Backspread:</strong> A volatility play with unlimited profit potential. You sell fewer options at one strike and buy more at another. Profits from big moves in one direction. ${isCallSpread ? 'Unlimited upside if ' + group.symbol + ' rallies hard.' : 'Unlimited downside profit if ' + group.symbol + ' crashes.'}`
+                                        : `<strong>Ratio Spread:</strong> A neutral to slightly directional strategy. You buy fewer options and sell more to collect premium. Profits if ${group.symbol} moves modestly. Risk if it moves too far ${isCallSpread ? 'up' : 'down'}.`,
+                                    maxProfit: isBackspread ? 'Unlimited' : fmt(netAmount),
+                                    maxLoss: isBackspread ? fmt(netAmount) : 'Can be substantial',
+                                    breakeven: 'Multiple breakevens'
+                                };
+                            }
+                        }
+                        
+                        // If not a ratio spread, check for regular vertical spread
+                        if (strategy.name === 'Complex Multi-Leg') {
+                            const buyLeg = legs.find(l => ['A', 'AA'].includes(l.Side));
+                            const sellLeg = legs.find(l => ['B', 'BB'].includes(l.Side));
                             
-                            if (isCallSpread) {
-                                const isBullCall = buyStrike < sellStrike;
-                                strategy = {
-                                    name: isBullCall ? 'Bull Call Spread' : 'Bear Call Spread',
-                                    type: 'directional',
-                                    bias: isBullCall ? 'bullish' : 'bearish',
-                                    isCredit: !isBullCall,
-                                    netAmount: netAmount,
-                                    description: `$${Math.min(buyStrike, sellStrike)}/$${Math.max(buyStrike, sellStrike)} calls`,
-                                    education: isBullCall
-                                        ? `<strong>Bull Call Spread:</strong> You're moderately bullish on ${group.symbol}. You buy a lower strike call and sell a higher strike call to reduce cost. <strong>Max profit</strong> if stock closes above $${sellStrike} at expiration. <strong>Max loss</strong> is limited to what you paid.`
-                                        : `<strong>Bear Call Spread:</strong> You're moderately bearish/neutral on ${group.symbol}. You sell a lower strike call and buy a higher strike call for protection. <strong>Max profit</strong> is the credit received if stock stays below $${buyStrike}. <strong>Max loss</strong> is the spread width minus credit.`,
-                                    maxProfit: isBullCall ? fmt(spreadWidth - netAmount) : fmt(netAmount),
-                                    maxLoss: isBullCall ? fmt(netAmount) : fmt(spreadWidth - netAmount),
-                                    breakeven: `$${(Math.min(buyStrike, sellStrike) + (isBullCall ? netAmount : -netAmount) / buyLeg.Volume / 100).toFixed(2)}`
-                                };
-                            } else {
-                                const isBullPut = sellStrike < buyStrike;
-                                strategy = {
-                                    name: isBullPut ? 'Bull Put Spread' : 'Bear Put Spread',
-                                    type: 'directional',
-                                    bias: isBullPut ? 'bullish' : 'bearish',
-                                    isCredit: isBullPut,
-                                    netAmount: netAmount,
-                                    description: `$${Math.min(buyStrike, sellStrike)}/$${Math.max(buyStrike, sellStrike)} puts`,
-                                    education: isBullPut
-                                        ? `<strong>Bull Put Spread:</strong> You're moderately bullish on ${group.symbol}. You sell a higher strike put and buy a lower strike put for protection. <strong>Max profit</strong> is the credit received if stock stays above $${sellStrike}. <strong>Max loss</strong> is spread width minus credit.`
-                                        : `<strong>Bear Put Spread:</strong> You're moderately bearish on ${group.symbol}. You buy a higher strike put and sell a lower strike put to reduce cost. <strong>Max profit</strong> if stock closes below $${sellStrike}. <strong>Max loss</strong> is limited to what you paid.`,
-                                    maxProfit: isBullPut ? fmt(netAmount) : fmt(spreadWidth - netAmount),
-                                    maxLoss: isBullPut ? fmt(spreadWidth - netAmount) : fmt(netAmount),
-                                    breakeven: `$${(Math.max(buyStrike, sellStrike) - (isBullPut ? netAmount : -netAmount) / buyLeg.Volume / 100).toFixed(2)}`
-                                };
+                            if (buyLeg && sellLeg) {
+                                const buyStrike = buyLeg.Strike;
+                                const sellStrike = sellLeg.Strike;
+                                const spreadWidth = Math.abs(sellStrike - buyStrike) * 100 * buyLeg.Volume;
+                                
+                                if (isCallSpread) {
+                                    const isBullCall = buyStrike < sellStrike;
+                                    strategy = {
+                                        name: isBullCall ? 'Bull Call Spread' : 'Bear Call Spread',
+                                        type: 'directional',
+                                        bias: isBullCall ? 'bullish' : 'bearish',
+                                        isCredit: !isBullCall,
+                                        netAmount: netAmount,
+                                        description: `$${Math.min(buyStrike, sellStrike)}/$${Math.max(buyStrike, sellStrike)} calls`,
+                                        education: isBullCall
+                                            ? `<strong>Bull Call Spread:</strong> You're moderately bullish on ${group.symbol}. You buy a lower strike call and sell a higher strike call to reduce cost. <strong>Max profit</strong> if stock closes above $${sellStrike} at expiration. <strong>Max loss</strong> is limited to what you paid.`
+                                            : `<strong>Bear Call Spread:</strong> You're moderately bearish/neutral on ${group.symbol}. You sell a lower strike call and buy a higher strike call for protection. <strong>Max profit</strong> is the credit received if stock stays below $${buyStrike}. <strong>Max loss</strong> is the spread width minus credit.`,
+                                        maxProfit: isBullCall ? fmt(spreadWidth - netAmount) : fmt(netAmount),
+                                        maxLoss: isBullCall ? fmt(netAmount) : fmt(spreadWidth - netAmount),
+                                        breakeven: `$${(Math.min(buyStrike, sellStrike) + (isBullCall ? netAmount : -netAmount) / buyLeg.Volume / 100).toFixed(2)}`
+                                    };
+                                } else {
+                                    // For PUT spreads:
+                                    // Bull Put Spread: SELL higher strike put, BUY lower strike put (credit)
+                                    // Bear Put Spread: BUY higher strike put, SELL lower strike put (debit)
+                                    const isBullPut = sellStrike > buyStrike;
+                                    strategy = {
+                                        name: isBullPut ? 'Bull Put Spread' : 'Bear Put Spread',
+                                        type: 'directional',
+                                        bias: isBullPut ? 'bullish' : 'bearish',
+                                        isCredit: isBullPut,
+                                        netAmount: netAmount,
+                                        description: `$${Math.min(buyStrike, sellStrike)}/$${Math.max(buyStrike, sellStrike)} puts`,
+                                        education: isBullPut
+                                            ? `<strong>Bull Put Spread:</strong> You're moderately bullish on ${group.symbol}. You sell a higher strike put ($${sellStrike}) and buy a lower strike put ($${buyStrike}) for protection. <strong>Max profit</strong> is the credit received if stock stays above $${sellStrike}. <strong>Max loss</strong> is spread width minus credit.`
+                                            : `<strong>Bear Put Spread:</strong> You're moderately bearish on ${group.symbol}. You buy a higher strike put ($${buyStrike}) and sell a lower strike put ($${sellStrike}) to reduce cost. <strong>Max profit</strong> if stock closes below $${sellStrike}. <strong>Max loss</strong> is limited to what you paid.`,
+                                        maxProfit: isBullPut ? fmt(netAmount) : fmt(spreadWidth - netAmount),
+                                        maxLoss: isBullPut ? fmt(spreadWidth - netAmount) : fmt(netAmount),
+                                        breakeven: `$${(Math.max(buyStrike, sellStrike) - (isBullPut ? netAmount : -netAmount) / buyLeg.Volume / 100).toFixed(2)}`
+                                    };
+                                }
                             }
                         }
                     }
                     // STRANGLE: Different strikes, same exp, 1 call + 1 put, both OTM
                     else if (calls.length === 1 && puts.length === 1 && strikes.length === 2 && exps.length === 1) {
-                        const isBuying = buys.length === 2;
-                        const callStrike = calls[0].Strike;
-                        const putStrike = puts[0].Strike;
+                        const callLeg = calls[0];
+                        const putLeg = puts[0];
+                        const callStrike = callLeg.Strike;
+                        const putStrike = putLeg.Strike;
+                        const spot = (callLeg.Spot + putLeg.Spot) / 2;
+                        
+                        // Check if it's a Risk Reversal (one buy, one sell) vs Strangle (both same direction)
+                        const callIsBuy = ['A', 'AA'].includes(callLeg.Side);
+                        const putIsBuy = ['A', 'AA'].includes(putLeg.Side);
+                        
+                        if (callIsBuy !== putIsBuy) {
+                            // RISK REVERSAL: Buy one, sell the other
+                            if (callIsBuy && !putIsBuy) {
+                                // Bullish Risk Reversal: Buy call, sell put
+                                strategy = {
+                                    name: 'Bullish Risk Reversal',
+                                    type: 'directional',
+                                    bias: 'bullish',
+                                    isCredit: isCredit,
+                                    netAmount: netAmount,
+                                    description: `Sell $${putStrike} put / Buy $${callStrike} call`,
+                                    education: `<strong>Bullish Risk Reversal:</strong> A synthetic long stock position using options. You sell an OTM put (bullish, collecting premium) and use that premium to buy an OTM call. This is a STRONG BULLISH bet - you profit if ${group.symbol} rises above $${callStrike}, but you're obligated to buy shares at $${putStrike} if it falls. Often used as a cheap way to get leveraged upside exposure.`,
+                                    maxProfit: 'Unlimited above call strike',
+                                    maxLoss: `Substantial below $${putStrike}`,
+                                    breakeven: isCredit ? `$${putStrike}` : `$${callStrike} + debit paid`
+                                };
+                            } else {
+                                // Bearish Risk Reversal: Buy put, sell call
+                                strategy = {
+                                    name: 'Bearish Risk Reversal',
+                                    type: 'directional',
+                                    bias: 'bearish',
+                                    isCredit: isCredit,
+                                    netAmount: netAmount,
+                                    description: `Buy $${putStrike} put / Sell $${callStrike} call`,
+                                    education: `<strong>Bearish Risk Reversal:</strong> A synthetic short stock position using options. You buy an OTM put (bearish) and sell an OTM call to finance it. This is a STRONG BEARISH bet - you profit if ${group.symbol} falls below $${putStrike}, but you're obligated to sell shares at $${callStrike} if it rises. Common hedge for long stock positions.`,
+                                    maxProfit: `Substantial below $${putStrike}`,
+                                    maxLoss: 'Unlimited above call strike',
+                                    breakeven: isCredit ? `$${callStrike}` : `$${putStrike} - debit paid`
+                                };
+                            }
+                        } else {
+                            // Regular Strangle (both buys or both sells)
+                            const isBuying = buys.length === 2;
+                            strategy = {
+                                name: isBuying ? 'Long Strangle' : 'Short Strangle',
+                                type: 'volatility',
+                                bias: 'neutral',
+                                isCredit: !isBuying,
+                                netAmount: netAmount,
+                                description: `$${putStrike} put / $${callStrike} call`,
+                                education: isBuying
+                                    ? `<strong>Long Strangle:</strong> Like a straddle but cheaper. You need ${group.symbol} to make a BIGGER move to profit. Stock must go above $${callStrike} or below $${putStrike} plus your cost to profit.`
+                                    : `<strong>Short Strangle:</strong> You profit if ${group.symbol} stays between $${putStrike} and $${callStrike}. Wider profit zone than a straddle, but still unlimited risk on big moves.`,
+                                maxProfit: isBuying ? 'Unlimited' : fmt(netAmount),
+                                maxLoss: isBuying ? fmt(netAmount) : 'Unlimited',
+                                breakeven: `$${putStrike} / $${callStrike} ± premium`
+                            };
+                        }
+                    }
+                    // CALENDAR SPREAD: Same strike, different expirations, same type
+                    else if (strikes.length === 1 && exps.length === 2 && (calls.length === 2 || puts.length === 2)) {
+                        const isCallCalendar = calls.length === 2;
                         strategy = {
-                            name: isBuying ? 'Long Strangle' : 'Short Strangle',
-                            type: 'volatility',
+                            name: isCallCalendar ? 'Call Calendar Spread' : 'Put Calendar Spread',
+                            type: 'time',
                             bias: 'neutral',
-                            isCredit: !isBuying,
+                            isCredit: isCredit,
                             netAmount: netAmount,
-                            description: `$${putStrike} put / $${callStrike} call`,
-                            education: isBuying
-                                ? `<strong>Long Strangle:</strong> Like a straddle but cheaper. You need ${group.symbol} to make a BIGGER move to profit. Stock must go above $${callStrike} or below $${putStrike} plus your cost to profit.`
-                                : `<strong>Short Strangle:</strong> You profit if ${group.symbol} stays between $${putStrike} and $${callStrike}. Wider profit zone than a straddle, but still unlimited risk on big moves.`,
-                            maxProfit: isBuying ? 'Unlimited' : fmt(netAmount),
-                            maxLoss: isBuying ? fmt(netAmount) : 'Unlimited',
-                            breakeven: `$${putStrike} / $${callStrike} ± premium`
+                            description: `$${strikes[0]} strike across expirations`,
+                            education: `<strong>Calendar Spread:</strong> You're trading time decay differences. The short-term option loses value faster than the long-term option. Profits if ${group.symbol} stays near $${strikes[0]} as the near-term option expires worthless.`,
+                            maxProfit: 'Variable (at near-term exp)',
+                            maxLoss: fmt(netAmount),
+                            breakeven: 'Near strike at front expiration'
                         };
                     }
-                    // CALENDAR SPREAD: Same strike, different expirations
+                    // DIAGONAL SPREAD: Different strikes AND different expirations
+                    else if (strikes.length === 2 && exps.length === 2 && (calls.length === 2 || puts.length === 2)) {
+                        const isCallDiagonal = calls.length === 2;
+                        const sortedByExp = legs.sort((a, b) => new Date(a.ExpirationDate) - new Date(b.ExpirationDate));
+                        const nearLeg = sortedByExp[0];
+                        const farLeg = sortedByExp[1];
+                        
+                        strategy = {
+                            name: isCallDiagonal ? 'Call Diagonal Spread' : 'Put Diagonal Spread',
+                            type: 'directional',
+                            bias: nearLeg.Strike < farLeg.Strike ? 'bullish' : 'bearish',
+                            isCredit: isCredit,
+                            netAmount: netAmount,
+                            description: `$${nearLeg.Strike} (${nearLeg.ExpirationDate}) / $${farLeg.Strike} (${farLeg.ExpirationDate})`,
+                            education: `<strong>Diagonal Spread:</strong> A combination of a vertical and calendar spread. You're playing both time decay and direction. The near-term option will decay faster while the longer-dated option retains more value.`,
+                            maxProfit: 'Variable',
+                            maxLoss: fmt(netAmount),
+                            breakeven: 'Complex - depends on IV'
+                        };
+                    }
+                    // CALENDAR SPREAD: Same strike, different expirations (mixed call/put - less common)
                     else if (strikes.length === 1 && exps.length === 2) {
                         strategy = {
                             name: 'Calendar Spread',
@@ -6023,22 +6200,98 @@
                         }
                     }
                 }
-                // 3-leg strategies (Butterflies, Ratio spreads)
+                // 3-leg strategies (Butterflies, Ratio spreads, Jade Lizard)
                 else if (legs.length === 3) {
-                    // Could be a butterfly or ratio spread
-                    if ((calls.length === 3 || puts.length === 3) && strikes.length === 3) {
-                        strategy = {
-                            name: 'Butterfly Spread',
-                            type: 'neutral',
-                            bias: 'neutral',
-                            isCredit: isCredit,
-                            netAmount: netAmount,
-                            description: `$${strikes[0]}/$${strikes[1]}/$${strikes[2]}`,
-                            education: `<strong>Butterfly Spread:</strong> A limited risk strategy betting ${group.symbol} closes near the middle strike ($${strikes[1]}) at expiration. Max profit at middle strike, limited loss outside the wings.`,
-                            maxProfit: 'At middle strike',
-                            maxLoss: fmt(netAmount),
-                            breakeven: `Between $${strikes[0]} and $${strikes[2]}`
-                        };
+                    // JADE LIZARD: Short put + short call spread (OTM put + OTM call spread) - 1 put, 2 calls
+                    if (puts.length === 1 && calls.length === 2 && exps.length === 1) {
+                        const putLeg = puts[0];
+                        const callLegs = calls.sort((a, b) => a.Strike - b.Strike);
+                        const putIsSell = ['B', 'BB'].includes(putLeg.Side);
+                        
+                        // Check if it's a short put + bear call spread pattern
+                        if (putIsSell && sells.length >= 2) {
+                            strategy = {
+                                name: 'Jade Lizard',
+                                type: 'neutral',
+                                bias: 'neutral-bullish',
+                                isCredit: true,
+                                netAmount: netAmount,
+                                description: `Short $${putLeg.Strike} put + $${callLegs[0].Strike}/$${callLegs[1].Strike} call spread`,
+                                education: `<strong>Jade Lizard:</strong> A premium collection strategy. You sell a naked put AND a call spread. The call spread caps your upside risk. Profit if ${group.symbol} stays above $${putLeg.Strike} and below $${callLegs[0].Strike}. Often structured so there's NO risk to the upside.`,
+                                maxProfit: fmt(netAmount),
+                                maxLoss: `Below $${putLeg.Strike}`,
+                                breakeven: `$${putLeg.Strike} - credit received`
+                            };
+                        }
+                    }
+                    // BUTTERFLY: 3 of same type with 3 different strikes (1-2-1 ratio)
+                    else if ((calls.length === 3 || puts.length === 3) && strikes.length === 3) {
+                        const sortedStrikes = [...strikes].sort((a, b) => a - b);
+                        const isCall = calls.length === 3;
+                        
+                        // Check for proper butterfly structure: middle strike should have 2x volume
+                        const middleStrike = sortedStrikes[1];
+                        const middleLegs = legs.filter(l => l.Strike === middleStrike);
+                        const middleVol = middleLegs.reduce((s, l) => s + l.Volume, 0);
+                        const wingVol = legs.filter(l => l.Strike !== middleStrike).reduce((s, l) => s + l.Volume, 0);
+                        
+                        if (middleVol >= wingVol) {
+                            strategy = {
+                                name: isCall ? 'Call Butterfly' : 'Put Butterfly',
+                                type: 'neutral',
+                                bias: 'neutral',
+                                isCredit: isCredit,
+                                netAmount: netAmount,
+                                description: `$${sortedStrikes[0]}/$${sortedStrikes[1]}/$${sortedStrikes[2]}`,
+                                education: `<strong>Butterfly Spread:</strong> A limited risk strategy betting ${group.symbol} closes near the middle strike ($${sortedStrikes[1]}) at expiration. You buy 1 lower wing, sell 2 middle, buy 1 upper wing. Max profit at middle strike, limited loss outside the wings.`,
+                                maxProfit: fmt((sortedStrikes[1] - sortedStrikes[0]) * 100 * (middleVol / 2) - netAmount),
+                                maxLoss: fmt(netAmount),
+                                breakeven: `$${sortedStrikes[0] + netAmount / 100} to $${sortedStrikes[2] - netAmount / 100}`
+                            };
+                        }
+                    }
+                    // RATIO SPREAD: 2 of same type with different strikes, unequal quantities
+                    else if ((calls.length === 2 || puts.length === 2) && strikes.length === 2) {
+                        const isCallRatio = calls.length === 2;
+                        const sortedLegs = (isCallRatio ? calls : puts).sort((a, b) => a.Strike - b.Strike);
+                        const lowerLeg = sortedLegs[0];
+                        const upperLeg = sortedLegs[1];
+                        
+                        // Check if volumes are different (ratio)
+                        if (lowerLeg.Volume !== upperLeg.Volume) {
+                            const ratio = Math.max(lowerLeg.Volume, upperLeg.Volume) / Math.min(lowerLeg.Volume, upperLeg.Volume);
+                            const lowerIsBuy = ['A', 'AA'].includes(lowerLeg.Side);
+                            const upperIsBuy = ['A', 'AA'].includes(upperLeg.Side);
+                            
+                            // Backspread = buying more of the OTM options
+                            // For CALLS: OTM = higher strike, so backspread = buy more upper
+                            // For PUTS: OTM = lower strike, so backspread = buy more lower
+                            let isBackspread;
+                            if (isCallRatio) {
+                                isBackspread = upperLeg.Volume > lowerLeg.Volume && upperIsBuy;
+                            } else {
+                                isBackspread = lowerLeg.Volume > upperLeg.Volume && lowerIsBuy;
+                            }
+                            
+                            strategy = {
+                                name: isCallRatio 
+                                    ? (isBackspread ? 'Call Ratio Backspread' : 'Call Ratio Spread')
+                                    : (isBackspread ? 'Put Ratio Backspread' : 'Put Ratio Spread'),
+                                type: 'directional',
+                                bias: isCallRatio 
+                                    ? (isBackspread ? 'very bullish' : 'moderately bullish')
+                                    : (isBackspread ? 'very bearish' : 'moderately bearish'),
+                                isCredit: isCredit,
+                                netAmount: netAmount,
+                                description: `${Math.round(ratio)}:1 ratio at $${lowerLeg.Strike}/$${upperLeg.Strike}`,
+                                education: isBackspread
+                                    ? `<strong>Ratio Backspread:</strong> A volatility play with unlimited profit potential. You sell fewer options at one strike and buy more at another. Profits from big moves in one direction. ${isCallRatio ? 'Unlimited upside if ' + group.symbol + ' rallies hard.' : 'Unlimited downside profit if ' + group.symbol + ' crashes.'}`
+                                    : `<strong>Ratio Spread:</strong> A neutral to slightly directional strategy. You buy fewer options and sell more to collect premium. Profits if ${group.symbol} moves modestly. Risk if it moves too far ${isCallRatio ? 'up' : 'down'}.`,
+                                maxProfit: isBackspread ? 'Unlimited' : fmt(netAmount),
+                                maxLoss: isBackspread ? fmt(netAmount) : 'Can be substantial',
+                                breakeven: 'Multiple breakevens'
+                            };
+                        }
                     }
                 }
                 
@@ -6223,6 +6476,7 @@
             // Process all multi-leg groups
             const strategies = Object.values(mlGroups)
                 .filter(g => g.legs.length >= 2)
+                .filter(g => g.totalPremium >= 100000) // Filter out noise - $100K minimum
                 .map(g => {
                     const strategy = identifyStrategy(g);
                     return {
@@ -6233,7 +6487,7 @@
                 })
                 .filter(g => g.strategy)
                 .sort((a, b) => b.totalPremium - a.totalPremium)
-                .slice(0, 30); // Increased limit since we now filter
+                .slice(0, 30); // Limit display
             
             // Store globally for filtering
             allMultiLegStrategies = strategies;
